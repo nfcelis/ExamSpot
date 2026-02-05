@@ -6,6 +6,9 @@ export function Navbar() {
   const { user, profile, signOut } = useAuth()
   const navigate = useNavigate()
 
+  const isTeacher = profile?.role === 'teacher'
+  const isStudent = profile?.role === 'student'
+
   const handleSignOut = async () => {
     await signOut()
     navigate('/login')
@@ -24,28 +27,28 @@ export function Navbar() {
         </Link>
 
         {user && (
-          <div className="flex items-center gap-6">
-            <div className="hidden items-center gap-4 sm:flex">
+          <div className="flex items-center gap-3 sm:gap-6">
+            <div className="flex items-center gap-2 sm:gap-4">
               <Link
                 to="/dashboard"
                 className="text-sm font-medium text-secondary-600 hover:text-secondary-900"
               >
                 Dashboard
               </Link>
-              {profile?.role === 'teacher' && (
+              {isTeacher && (
                 <Link
-                  to="/dashboard"
-                  className="text-sm font-medium text-secondary-600 hover:text-secondary-900"
+                  to="/exams/new"
+                  className="rounded-lg bg-primary-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-primary-700"
                 >
-                  Mis Exámenes
+                  Crear Examen
                 </Link>
               )}
-              {profile?.role === 'student' && (
+              {isStudent && (
                 <Link
                   to="/dashboard"
                   className="text-sm font-medium text-secondary-600 hover:text-secondary-900"
                 >
-                  Mi Historial
+                  Exámenes
                 </Link>
               )}
             </div>

@@ -8,6 +8,10 @@ import { FullPageSpinner } from './components/common/LoadingSpinner'
 import { LoginPage } from './pages/LoginPage'
 import { RegisterPage } from './pages/RegisterPage'
 import { DashboardPage } from './pages/DashboardPage'
+import { ExamCreatePage } from './pages/ExamCreatePage'
+import { ExamEditPage } from './pages/ExamEditPage'
+import { ExamTakePage } from './pages/ExamTakePage'
+import { ExamResultsPage } from './pages/ExamResultsPage'
 import { NotFoundPage } from './pages/NotFoundPage'
 
 const queryClient = new QueryClient({
@@ -41,6 +45,38 @@ function AppRoutes() {
         element={
           <ProtectedRoute>
             <DashboardPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/exams/new"
+        element={
+          <ProtectedRoute requireRole="teacher">
+            <ExamCreatePage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/exams/:id/edit"
+        element={
+          <ProtectedRoute requireRole="teacher">
+            <ExamEditPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/exams/:id"
+        element={
+          <ProtectedRoute>
+            <ExamTakePage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/exams/:id/results/:attemptId"
+        element={
+          <ProtectedRoute>
+            <ExamResultsPage />
           </ProtectedRoute>
         }
       />

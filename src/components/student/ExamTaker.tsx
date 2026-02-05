@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { Button } from '../common/Button'
 import { Card } from '../common/Card'
 import { Modal } from '../common/Modal'
+import { LoadingSpinner } from '../common/LoadingSpinner'
 import { QuestionDisplay } from './QuestionDisplay'
 import { ExamTimer } from './ExamTimer'
 import { useSaveAnswer, useSubmitExam } from '../../hooks/useAttempts'
@@ -83,7 +84,7 @@ export function ExamTaker({ exam, attempt, questions }: ExamTakerProps) {
     await Promise.all(savePromises)
 
     submitExam.mutate(
-      { attemptId: attempt.id, questions },
+      { attemptId: attempt.id, questions, examId: exam.id },
       {
         onSuccess: () => {
           navigate(`/exams/${exam.id}/results/${attempt.id}`)
@@ -94,6 +95,20 @@ export function ExamTaker({ exam, attempt, questions }: ExamTakerProps) {
 
   const handleTimeUp = () => {
     handleSubmit()
+  }
+
+  if (submitExam.isPending) {
+    return (
+      <div className="mx-auto flex max-w-md flex-col items-center justify-center py-20 text-center">
+        <LoadingSpinner size="lg" className="text-primary-600" />
+        <h2 className="mt-4 text-xl font-semibold text-secondary-900">
+          Calificando con IA...
+        </h2>
+        <p className="mt-2 text-sm text-secondary-500">
+          Estamos evaluando tus respuestas. Esto puede tomar unos segundos.
+        </p>
+      </div>
+    )
   }
 
   return (

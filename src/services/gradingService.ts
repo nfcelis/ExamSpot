@@ -1,6 +1,7 @@
 import type { Question } from '../types/question'
 import type { ExamAnswer } from '../types/exam'
-import { gradeOpenEndedAnswer } from './aiService'
+import { gradeOpenEndedAnswer, checkSynonyms } from './aiService'
+import { getMaterialTextContent } from './materialService'
 import { updateAnswer } from './attemptService'
 
 interface GradeResult {
@@ -47,7 +48,7 @@ export function gradeMultipleChoice(question: Question, answer: unknown): GradeR
   return { isCorrect: false, score: 0 }
 }
 
-export function gradeFillBlank(question: Question, answer: unknown): GradeResult {
+export async function gradeFillBlank(question: Question, answer: unknown): Promise<GradeResult> {
   const correctAnswers = question.correct_answer as string[]
   const userAnswers = answer as string[]
 
@@ -59,7 +60,18 @@ export function gradeFillBlank(question: Question, answer: unknown): GradeResult
   for (let i = 0; i < correctAnswers.length; i++) {
     const correct = (correctAnswers[i] || '').trim().toLowerCase()
     const user = (userAnswers[i] || '').trim().toLowerCase()
-    if (correct === user) correctCount++
+
+    if (correct === user) {
+      correctCount++
+    } else if (user.length > 0) {
+      // Try AI synonym check for non-empty wrong answers
+      try {
+        const synonymResult = await checkSynonyms(correctAnswers[i], userAnswers[i])
+        if (synonymResult.isAccepted) correctCount++
+      } catch {
+        // AI unavailable, stick with exact match
+      }
+    }
   }
 
   const isCorrect = correctCount === correctAnswers.length
@@ -95,10 +107,21 @@ export function gradeMatching(question: Question, answer: unknown): GradeResult 
 
 export async function gradeExam(
   questions: Question[],
-  answers: ExamAnswer[]
+  answers: ExamAnswer[],
+  examId?: string
 ): Promise<{ totalScore: number; maxScore: number }> {
   const maxScore = questions.reduce((sum, q) => sum + q.points, 0)
   let totalScore = 0
+
+  // Fetch material context for AI grading
+  let materialContext = ''
+  if (examId) {
+    try {
+      materialContext = await getMaterialTextContent(examId)
+    } catch {
+      // Continue without material context
+    }
+  }
 
   for (const examAnswer of answers) {
     const question = questions.find((q) => q.id === examAnswer.question_id)
@@ -111,7 +134,7 @@ export async function gradeExam(
         result = gradeMultipleChoice(question, examAnswer.user_answer)
         break
       case 'fill_blank':
-        result = gradeFillBlank(question, examAnswer.user_answer)
+        result = await gradeFillBlank(question, examAnswer.user_answer)
         break
       case 'matching':
         result = gradeMatching(question, examAnswer.user_answer)
@@ -121,7 +144,8 @@ export async function gradeExam(
           question,
           typeof examAnswer.user_answer === 'string'
             ? examAnswer.user_answer
-            : JSON.stringify(examAnswer.user_answer)
+            : JSON.stringify(examAnswer.user_answer),
+          materialContext || undefined
         )
         result = {
           isCorrect: aiResult.score >= question.points * 0.7,

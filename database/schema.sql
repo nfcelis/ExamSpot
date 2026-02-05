@@ -344,3 +344,24 @@ $$ LANGUAGE plpgsql;
 CREATE OR REPLACE TRIGGER on_exam_updated
   BEFORE UPDATE ON exams
   FOR EACH ROW EXECUTE FUNCTION public.handle_updated_at();
+
+-- ============================================
+-- STORAGE BUCKETS
+-- ============================================
+
+INSERT INTO storage.buckets (id, name, public)
+VALUES ('exam-materials', 'exam-materials', true)
+ON CONFLICT (id) DO NOTHING;
+
+-- Storage policies: teachers can upload/delete, everyone can read
+CREATE POLICY "Anyone can read exam materials"
+  ON storage.objects FOR SELECT
+  USING (bucket_id = 'exam-materials');
+
+CREATE POLICY "Authenticated users can upload exam materials"
+  ON storage.objects FOR INSERT
+  WITH CHECK (bucket_id = 'exam-materials' AND auth.role() = 'authenticated');
+
+CREATE POLICY "Users can delete own exam materials"
+  ON storage.objects FOR DELETE
+  USING (bucket_id = 'exam-materials' AND auth.uid() = owner);

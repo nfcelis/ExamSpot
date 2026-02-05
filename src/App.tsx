@@ -12,6 +12,7 @@ import { ExamCreatePage } from './pages/ExamCreatePage'
 import { ExamEditPage } from './pages/ExamEditPage'
 import { ExamTakePage } from './pages/ExamTakePage'
 import { ExamResultsPage } from './pages/ExamResultsPage'
+import { HistoryPage } from './pages/HistoryPage'
 import { NotFoundPage } from './pages/NotFoundPage'
 
 const queryClient = new QueryClient({
@@ -77,6 +78,14 @@ function AppRoutes() {
         element={
           <ProtectedRoute>
             <ExamResultsPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/history"
+        element={
+          <ProtectedRoute requireRole="student">
+            <HistoryPage />
           </ProtectedRoute>
         }
       />

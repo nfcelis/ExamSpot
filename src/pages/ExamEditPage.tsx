@@ -8,6 +8,7 @@ import { Modal } from '../components/common/Modal'
 import { ConfirmDialog } from '../components/common/ConfirmDialog'
 import { QuestionForm } from '../components/question/QuestionForm'
 import { QuestionList } from '../components/question/QuestionList'
+import { MaterialUpload } from '../components/teacher/MaterialUpload'
 import { LoadingSpinner } from '../components/common/LoadingSpinner'
 import { useExam, useUpdateExam, useDeleteExam } from '../hooks/useExams'
 import {
@@ -127,6 +128,9 @@ export function ExamEditPage() {
             </div>
           </div>
         </Card>
+
+        {/* Material Section */}
+        <MaterialUpload examId={exam.id} />
 
         {/* Questions Section */}
         <div>

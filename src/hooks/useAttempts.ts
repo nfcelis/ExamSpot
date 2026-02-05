@@ -83,12 +83,14 @@ export function useSubmitExam() {
     mutationFn: async ({
       attemptId,
       questions,
+      examId,
     }: {
       attemptId: string
       questions: Question[]
+      examId?: string
     }) => {
       const answers = await getAnswersByAttempt(attemptId)
-      const { totalScore, maxScore } = await gradeExam(questions, answers)
+      const { totalScore, maxScore } = await gradeExam(questions, answers, examId)
       const attempt = await completeAttempt(attemptId, totalScore, maxScore)
       return attempt
     },

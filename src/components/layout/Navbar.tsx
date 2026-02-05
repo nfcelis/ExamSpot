@@ -44,12 +44,20 @@ export function Navbar() {
                 </Link>
               )}
               {isStudent && (
-                <Link
-                  to="/dashboard"
-                  className="text-sm font-medium text-secondary-600 hover:text-secondary-900"
-                >
-                  Exámenes
-                </Link>
+                <>
+                  <Link
+                    to="/dashboard"
+                    className="text-sm font-medium text-secondary-600 hover:text-secondary-900"
+                  >
+                    Exámenes
+                  </Link>
+                  <Link
+                    to="/history"
+                    className="text-sm font-medium text-secondary-600 hover:text-secondary-900"
+                  >
+                    Mi Historial
+                  </Link>
+                </>
               )}
             </div>
 

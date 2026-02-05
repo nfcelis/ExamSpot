@@ -100,7 +100,7 @@ export function ResultsView({ attempt, answers, questions }: ResultsViewProps) {
 
               {/* AI Analysis strengths/improvements */}
               {examAnswer?.ai_analysis != null && typeof examAnswer.ai_analysis === 'object' ? (
-                <AIAnalysisBlock analysis={examAnswer.ai_analysis as { strengths?: string[]; improvements?: string[] }} />
+                <AIAnalysisBlock analysis={examAnswer.ai_analysis as AIAnalysis} />
               ) : null}
 
               {/* Explanation */}
@@ -118,7 +118,13 @@ export function ResultsView({ attempt, answers, questions }: ResultsViewProps) {
   )
 }
 
-function AIAnalysisBlock({ analysis }: { analysis: { strengths?: string[]; improvements?: string[] } }) {
+interface AIAnalysis {
+  strengths?: string[]
+  improvements?: string[]
+  references?: Array<{ material: string; section: string; reason: string }>
+}
+
+function AIAnalysisBlock({ analysis }: { analysis: AIAnalysis }) {
   return (
     <div className="space-y-2 text-sm">
       {analysis.strengths && analysis.strengths.length > 0 && (
@@ -137,6 +143,27 @@ function AIAnalysisBlock({ analysis }: { analysis: { strengths?: string[]; impro
           <ul className="mt-1 list-inside list-disc text-yellow-600">
             {analysis.improvements.map((s, i) => (
               <li key={i}>{s}</li>
+            ))}
+          </ul>
+        </div>
+      )}
+      {analysis.references && analysis.references.length > 0 && (
+        <div className="rounded-lg bg-indigo-50 p-3">
+          <div className="mb-2 flex items-center gap-1.5 font-medium text-indigo-700">
+            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+            </svg>
+            Material de referencia:
+          </div>
+          <ul className="space-y-2">
+            {analysis.references.map((ref, i) => (
+              <li key={i} className="rounded border border-indigo-200 bg-white p-2">
+                <p className="font-medium text-indigo-800">{ref.material}</p>
+                {ref.section && (
+                  <p className="text-xs text-indigo-600">Sección: {ref.section}</p>
+                )}
+                <p className="mt-1 text-indigo-700">{ref.reason}</p>
+              </li>
             ))}
           </ul>
         </div>

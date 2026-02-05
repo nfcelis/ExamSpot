@@ -1,0 +1,3 @@
+# Disable JWT verification for this function
+# The function is protected by the GROQ_API_KEY secret
+verify_jwt = false

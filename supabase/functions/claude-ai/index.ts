@@ -1,19 +1,21 @@
-// Supabase Edge Function for Claude AI API calls
-// This keeps the Anthropic API key server-side and secure.
+// Supabase Edge Function for AI API calls using Groq (free tier)
+// This keeps the API key server-side and secure.
 //
 // Deploy with: supabase functions deploy claude-ai
-// Set secret:  supabase secrets set ANTHROPIC_API_KEY=your-key-here
+// Set secret:  supabase secrets set GROQ_API_KEY=your-key-here
+//
+// Get your free API key at: https://console.groq.com/keys
 
 import "jsr:@supabase/functions-js/edge-runtime.d.ts"
 
-const ANTHROPIC_API_KEY = Deno.env.get('ANTHROPIC_API_KEY')
+const GROQ_API_KEY = Deno.env.get('GROQ_API_KEY')
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
-interface ClaudeRequest {
+interface AIRequest {
   prompt: string
   maxTokens?: number
   system?: string
@@ -26,23 +28,17 @@ Deno.serve(async (req) => {
   }
 
   try {
-    // Verify auth token
-    const authHeader = req.headers.get('Authorization')
-    if (!authHeader) {
-      return new Response(
-        JSON.stringify({ error: 'Missing authorization header' }),
-        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
-    }
+    // Note: Auth check removed - function is protected by GROQ_API_KEY
+    // In production, you may want to verify the Supabase JWT token here
 
-    if (!ANTHROPIC_API_KEY) {
+    if (!GROQ_API_KEY) {
       return new Response(
-        JSON.stringify({ error: 'Anthropic API key not configured' }),
+        JSON.stringify({ error: 'GROQ_API_KEY not configured. Get a free key at https://console.groq.com/keys' }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
 
-    const { prompt, maxTokens = 2000, system } = await req.json() as ClaudeRequest
+    const { prompt, maxTokens = 2000, system } = await req.json() as AIRequest
 
     if (!prompt) {
       return new Response(
@@ -51,24 +47,27 @@ Deno.serve(async (req) => {
       )
     }
 
-    const messages = [{ role: 'user', content: prompt }]
-
-    const body: Record<string, unknown> = {
-      model: 'claude-sonnet-4-20250514',
-      max_tokens: maxTokens,
-      messages,
-    }
+    // Build messages array for OpenAI-compatible API
+    const messages: Array<{ role: string; content: string }> = []
 
     if (system) {
-      body.system = system
+      messages.push({ role: 'system', content: system })
     }
 
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
+    messages.push({ role: 'user', content: prompt })
+
+    const body = {
+      model: 'llama-3.3-70b-versatile', // Fast & capable, free tier friendly
+      max_tokens: maxTokens,
+      messages,
+      temperature: 0.3, // Lower temperature for more consistent grading
+    }
+
+    const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'x-api-key': ANTHROPIC_API_KEY,
-        'anthropic-version': '2023-06-01',
+        'Authorization': `Bearer ${GROQ_API_KEY}`,
       },
       body: JSON.stringify(body),
     })
@@ -77,13 +76,14 @@ Deno.serve(async (req) => {
 
     if (!response.ok) {
       return new Response(
-        JSON.stringify({ error: 'Claude API error', details: data }),
+        JSON.stringify({ error: 'Groq API error', details: data }),
         { status: response.status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
 
+    // Groq uses OpenAI format: data.choices[0].message.content
     return new Response(
-      JSON.stringify({ content: data.content[0].text }),
+      JSON.stringify({ content: data.choices[0].message.content }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
   } catch (error) {

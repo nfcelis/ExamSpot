@@ -38,6 +38,16 @@ export async function createQuestion(questionData: CreateQuestionData): Promise<
   return data as Question
 }
 
+export async function createQuestionsBatch(questionsData: CreateQuestionData[]): Promise<Question[]> {
+  const { data, error } = await supabase
+    .from('questions')
+    .insert(questionsData)
+    .select()
+
+  if (error) throw error
+  return data as Question[]
+}
+
 export async function updateQuestion(id: string, questionData: UpdateQuestionData): Promise<Question> {
   const { data, error } = await supabase
     .from('questions')

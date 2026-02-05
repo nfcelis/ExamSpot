@@ -140,6 +140,7 @@ export async function gradeExam(
         result = gradeMatching(question, examAnswer.user_answer)
         break
       case 'open_ended': {
+        console.log('Grading open-ended question:', question.id)
         const aiResult = await gradeOpenEndedAnswer(
           question,
           typeof examAnswer.user_answer === 'string'
@@ -147,17 +148,20 @@ export async function gradeExam(
             : JSON.stringify(examAnswer.user_answer),
           materialContext || undefined
         )
+        console.log('AI Result:', aiResult)
         result = {
           isCorrect: aiResult.score >= question.points * 0.7,
           score: aiResult.score,
           feedback: aiResult.feedback,
         }
+        console.log('Saving answer with feedback:', result.feedback)
         await updateAnswer(examAnswer.id, {
           is_correct: result.isCorrect,
           score: result.score,
           feedback: result.feedback,
           ai_analysis: aiResult,
         })
+        console.log('Answer saved successfully')
         totalScore += result.score
         continue
       }

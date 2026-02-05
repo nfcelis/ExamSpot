@@ -2,9 +2,10 @@ import { Card } from '../common/Card'
 import type { Question } from '../../types/question'
 
 interface QuestionPreviewProps {
-  question: Question
-  index: number
+  question: Partial<Question> & { type: string; question_text: string }
+  index?: number
   showAnswer?: boolean
+  compact?: boolean
 }
 
 const typeLabels: Record<string, string> = {
@@ -14,17 +15,42 @@ const typeLabels: Record<string, string> = {
   matching: 'Emparejar',
 }
 
-export function QuestionPreview({ question, index, showAnswer = false }: QuestionPreviewProps) {
+export function QuestionPreview({ question, index, showAnswer = false, compact = false }: QuestionPreviewProps) {
+  if (compact) {
+    return (
+      <div className="space-y-2">
+        <div className="flex items-center gap-2">
+          <span className="rounded bg-secondary-100 px-2 py-0.5 text-xs font-medium text-secondary-600">
+            {typeLabels[question.type]}
+          </span>
+          <span className="text-xs text-secondary-400">{question.points || 10} pts</span>
+        </div>
+        <p className="text-sm text-secondary-800">{question.question_text}</p>
+        {question.type === 'multiple_choice' && question.options && (
+          <div className="flex flex-wrap gap-1">
+            {question.options.map((opt, i) => (
+              <span key={i} className="rounded bg-secondary-50 px-2 py-0.5 text-xs text-secondary-600">
+                {opt}
+              </span>
+            ))}
+          </div>
+        )}
+      </div>
+    )
+  }
+
   return (
     <Card className="space-y-3">
       <div className="flex items-start justify-between">
         <div className="flex items-center gap-2">
-          <span className="flex h-6 w-6 items-center justify-center rounded-full bg-primary-100 text-xs font-medium text-primary-700">
-            {index + 1}
-          </span>
+          {index !== undefined && (
+            <span className="flex h-6 w-6 items-center justify-center rounded-full bg-primary-100 text-xs font-medium text-primary-700">
+              {index + 1}
+            </span>
+          )}
           <span className="text-xs text-secondary-400">{typeLabels[question.type]}</span>
         </div>
-        <span className="text-xs font-medium text-secondary-500">{question.points} pts</span>
+        <span className="text-xs font-medium text-secondary-500">{question.points || 10} pts</span>
       </div>
 
       <p className="font-medium text-secondary-900">{question.question_text}</p>

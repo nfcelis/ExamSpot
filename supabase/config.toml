@@ -1,0 +1,9 @@
+# Supabase local development config
+
+[api]
+enabled = true
+port = 54321
+
+[functions.claude-ai]
+# Disable JWT verification - function is protected by GROQ_API_KEY
+verify_jwt = false

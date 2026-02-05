@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import {
   getQuestionsByExamId,
   createQuestion,
+  createQuestionsBatch,
   updateQuestion,
   deleteQuestion,
   reorderQuestions,
@@ -29,6 +30,24 @@ export function useCreateQuestion() {
     },
     onError: (error: Error) => {
       toast.error(`Error al crear pregunta: ${error.message}`)
+    },
+  })
+}
+
+export function useCreateQuestionsBatch() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: (data: CreateQuestionData[]) => createQuestionsBatch(data),
+    onSuccess: (_, variables) => {
+      const examId = variables[0]?.exam_id
+      if (examId) {
+        queryClient.invalidateQueries({ queryKey: ['questions', examId] })
+      }
+      toast.success(`${variables.length} preguntas agregadas`)
+    },
+    onError: (error: Error) => {
+      toast.error(`Error al crear preguntas: ${error.message}`)
     },
   })
 }

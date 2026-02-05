@@ -9,20 +9,24 @@ import { ConfirmDialog } from '../components/common/ConfirmDialog'
 import { QuestionForm } from '../components/question/QuestionForm'
 import { QuestionList } from '../components/question/QuestionList'
 import { MaterialUpload } from '../components/teacher/MaterialUpload'
+import { QuestionGenerator } from '../components/teacher/QuestionGenerator'
 import { LoadingSpinner } from '../components/common/LoadingSpinner'
 import { useExam, useUpdateExam, useDeleteExam } from '../hooks/useExams'
 import {
   useQuestions,
   useCreateQuestion,
+  useCreateQuestionsBatch,
   useDeleteQuestion,
   useReorderQuestions,
 } from '../hooks/useQuestions'
 import type { CreateQuestionData } from '../services/questionService'
+import type { GeneratedQuestion } from '../services/aiService'
 
 export function ExamEditPage() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const [showQuestionModal, setShowQuestionModal] = useState(false)
+  const [showGeneratorModal, setShowGeneratorModal] = useState(false)
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
 
   const { data: exam, isLoading: examLoading } = useExam(id)
@@ -31,6 +35,7 @@ export function ExamEditPage() {
   const updateExam = useUpdateExam()
   const deleteExam = useDeleteExam()
   const createQuestion = useCreateQuestion()
+  const createQuestionsBatch = useCreateQuestionsBatch()
   const deleteQuestion = useDeleteQuestion()
   const reorderQuestions = useReorderQuestions()
 
@@ -74,6 +79,24 @@ export function ExamEditPage() {
 
   const handleDeleteQuestion = (questionId: string) => {
     deleteQuestion.mutate({ id: questionId, examId: exam.id })
+  }
+
+  const handleAddGeneratedQuestions = (generatedQuestions: GeneratedQuestion[]) => {
+    const questionsData: CreateQuestionData[] = generatedQuestions.map((q, i) => ({
+      exam_id: exam.id,
+      type: q.type,
+      question_text: q.question_text,
+      options: q.options || null,
+      correct_answer: q.correct_answer,
+      terms: q.terms || null,
+      points: q.points || 10,
+      explanation: q.explanation || null,
+      order_index: questions.length + i,
+    }))
+
+    createQuestionsBatch.mutate(questionsData, {
+      onSuccess: () => setShowGeneratorModal(false),
+    })
   }
 
   const handleMoveUp = (index: number) => {
@@ -136,9 +159,17 @@ export function ExamEditPage() {
         <div>
           <div className="mb-4 flex items-center justify-between">
             <h2 className="text-lg font-semibold text-secondary-900">Preguntas</h2>
-            <Button onClick={() => setShowQuestionModal(true)}>
-              Agregar pregunta
-            </Button>
+            <div className="flex gap-2">
+              <Button variant="secondary" onClick={() => setShowGeneratorModal(true)}>
+                <svg className="mr-1.5 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                </svg>
+                Generar con IA
+              </Button>
+              <Button onClick={() => setShowQuestionModal(true)}>
+                Agregar pregunta
+              </Button>
+            </div>
           </div>
 
           <QuestionList
@@ -175,6 +206,19 @@ export function ExamEditPage() {
         message="¿Estás seguro de que deseas eliminar este examen? Se eliminarán también todas las preguntas y los intentos asociados. Esta acción no se puede deshacer."
         loading={deleteExam.isPending}
       />
+
+      {/* AI Question Generator Modal */}
+      <Modal
+        isOpen={showGeneratorModal}
+        onClose={() => setShowGeneratorModal(false)}
+        title="Generar preguntas con IA"
+        className="max-w-3xl"
+      >
+        <QuestionGenerator
+          onAddQuestions={handleAddGeneratedQuestions}
+          loading={createQuestionsBatch.isPending}
+        />
+      </Modal>
     </PageLayout>
   )
 }

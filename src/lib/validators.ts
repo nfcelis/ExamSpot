@@ -6,12 +6,16 @@ export const examFormSchema = z.object({
   description: z.string().max(1000, 'Máximo 1000 caracteres').optional().or(z.literal('')),
   is_public: z.boolean().default(true),
   time_limit: z
-    .number()
-    .min(1, 'Mínimo 1 minuto')
-    .max(480, 'Máximo 480 minutos')
+    .union([
+      z.number().min(1, 'Mínimo 1 minuto').max(480, 'Máximo 480 minutos'),
+      z.nan(),
+      z.literal(''),
+    ])
+    .transform((val) => (typeof val === 'number' && !isNaN(val) ? val : null))
     .nullable()
     .optional(),
   randomize_order: z.boolean().default(false),
+  publish_immediately: z.boolean().default(false),
 })
 
 export type ExamFormValues = z.output<typeof examFormSchema>

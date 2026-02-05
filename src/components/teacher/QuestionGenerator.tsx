@@ -1,18 +1,21 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Button } from '../common/Button'
 import { Input } from '../common/Input'
 import { Textarea } from '../common/Textarea'
 import { Select } from '../common/Select'
 import { LoadingSpinner } from '../common/LoadingSpinner'
 import { QuestionPreview } from '../question/QuestionPreview'
+import { getMaterialsByExam, getMaterialDownloadUrl } from '../../services/materialService'
 import {
   generateQuestionsFromMaterial,
   type GeneratedQuestion,
   type GenerateQuestionsParams,
 } from '../../services/aiService'
+import type { Material } from '../../types/exam'
 import toast from 'react-hot-toast'
 
 interface QuestionGeneratorProps {
+  examId: string
   onAddQuestions: (questions: GeneratedQuestion[]) => void
   loading?: boolean
 }
@@ -30,8 +33,11 @@ const DIFFICULTY_OPTIONS = [
   { value: 'hard', label: 'Difícil' },
 ]
 
-export function QuestionGenerator({ onAddQuestions, loading: externalLoading }: QuestionGeneratorProps) {
-  const [materialContent, setMaterialContent] = useState('')
+export function QuestionGenerator({ examId, onAddQuestions, loading: externalLoading }: QuestionGeneratorProps) {
+  const [materials, setMaterials] = useState<Material[]>([])
+  const [loadingMaterials, setLoadingMaterials] = useState(true)
+  const [selectedMaterials, setSelectedMaterials] = useState<Set<string>>(new Set())
+  const [additionalContent, setAdditionalContent] = useState('')
   const [questionCount, setQuestionCount] = useState(5)
   const [difficulty, setDifficulty] = useState<'easy' | 'medium' | 'hard'>('medium')
   const [selectedTypes, setSelectedTypes] = useState<Set<GenerateQuestionsParams['questionTypes'][number]>>(
@@ -41,11 +47,40 @@ export function QuestionGenerator({ onAddQuestions, loading: externalLoading }: 
   const [generatedQuestions, setGeneratedQuestions] = useState<GeneratedQuestion[]>([])
   const [selectedQuestions, setSelectedQuestions] = useState<Set<number>>(new Set())
 
+  // Fetch materials on mount
+  useEffect(() => {
+    async function fetchMaterials() {
+      try {
+        const mats = await getMaterialsByExam(examId)
+        setMaterials(mats)
+        // Select all by default
+        setSelectedMaterials(new Set(mats.map((m) => m.id)))
+      } catch (error) {
+        console.error('Error fetching materials:', error)
+      } finally {
+        setLoadingMaterials(false)
+      }
+    }
+    fetchMaterials()
+  }, [examId])
+
+  const toggleMaterial = (id: string) => {
+    setSelectedMaterials((prev) => {
+      const next = new Set(prev)
+      if (next.has(id)) {
+        next.delete(id)
+      } else {
+        next.add(id)
+      }
+      return next
+    })
+  }
+
   const toggleType = (type: GenerateQuestionsParams['questionTypes'][number]) => {
     setSelectedTypes((prev) => {
       const next = new Set(prev)
       if (next.has(type)) {
-        if (next.size > 1) next.delete(type) // Keep at least one selected
+        if (next.size > 1) next.delete(type)
       } else {
         next.add(type)
       }
@@ -53,14 +88,28 @@ export function QuestionGenerator({ onAddQuestions, loading: externalLoading }: 
     })
   }
 
-  const handleGenerate = async () => {
-    if (!materialContent.trim()) {
-      toast.error('Ingresa el contenido del material')
-      return
+  const fetchTextContent = async (material: Material): Promise<string> => {
+    // For text files, try to fetch and read content
+    if (material.file_type === 'txt') {
+      try {
+        const url = await getMaterialDownloadUrl(material.file_path)
+        const response = await fetch(url)
+        if (response.ok) {
+          return await response.text()
+        }
+      } catch (error) {
+        console.error('Error fetching text file:', error)
+      }
     }
+    // For other types, return metadata
+    return `[Documento: ${material.title}]`
+  }
 
-    if (materialContent.trim().length < 100) {
-      toast.error('El material debe tener al menos 100 caracteres')
+  const handleGenerate = async () => {
+    const selectedMats = materials.filter((m) => selectedMaterials.has(m.id))
+
+    if (selectedMats.length === 0 && !additionalContent.trim()) {
+      toast.error('Selecciona al menos un material o ingresa contenido adicional')
       return
     }
 
@@ -69,14 +118,34 @@ export function QuestionGenerator({ onAddQuestions, loading: externalLoading }: 
     setSelectedQuestions(new Set())
 
     try {
+      // Build content from selected materials
+      const materialContents: string[] = []
+
+      for (const mat of selectedMats) {
+        const content = await fetchTextContent(mat)
+        materialContents.push(content)
+      }
+
+      // Combine material content with additional content
+      let fullContent = materialContents.join('\n\n')
+      if (additionalContent.trim()) {
+        fullContent += '\n\n--- Contenido adicional ---\n' + additionalContent.trim()
+      }
+
+      if (fullContent.trim().length < 50) {
+        toast.error('El contenido debe tener al menos 50 caracteres. Para archivos PDF/DOC, pega el texto relevante en el campo de contenido adicional.')
+        setGenerating(false)
+        return
+      }
+
       const questions = await generateQuestionsFromMaterial({
-        materialContent: materialContent.trim(),
+        materialContent: fullContent,
         questionCount,
         questionTypes: Array.from(selectedTypes),
         difficulty,
       })
+
       setGeneratedQuestions(questions)
-      // Select all by default
       setSelectedQuestions(new Set(questions.map((_, i) => i)))
       toast.success(`${questions.length} preguntas generadas`)
     } catch (error) {
@@ -107,87 +176,133 @@ export function QuestionGenerator({ onAddQuestions, loading: externalLoading }: 
     onAddQuestions(questionsToAdd)
     setGeneratedQuestions([])
     setSelectedQuestions(new Set())
-    setMaterialContent('')
+    setAdditionalContent('')
+  }
+
+  if (loadingMaterials) {
+    return (
+      <div className="flex justify-center py-8">
+        <LoadingSpinner size="lg" className="text-primary-600" />
+      </div>
+    )
   }
 
   return (
     <div className="space-y-6">
-      {/* Configuration Section */}
-      <div className="space-y-4">
-        <div>
-          <label className="mb-1.5 block text-sm font-medium text-secondary-700">
-            Contenido del material
-          </label>
-          <Textarea
-            value={materialContent}
-            onChange={(e) => setMaterialContent(e.target.value)}
-            placeholder="Pega aquí el contenido del material educativo (texto de PDF, apuntes, etc.)..."
-            rows={8}
-            disabled={generating}
-          />
-          <p className="mt-1 text-xs text-secondary-500">
-            Mínimo 100 caracteres. Puedes copiar y pegar el texto de tu PDF o documento.
-          </p>
-        </div>
-
-        <div className="grid gap-4 sm:grid-cols-2">
-          <Input
-            type="number"
-            label="Número de preguntas"
-            value={questionCount}
-            onChange={(e) => setQuestionCount(Math.max(1, Math.min(20, parseInt(e.target.value) || 1)))}
-            min={1}
-            max={20}
-            disabled={generating}
-          />
-
-          <Select
-            label="Dificultad"
-            value={difficulty}
-            onChange={(e) => setDifficulty(e.target.value as 'easy' | 'medium' | 'hard')}
-            options={DIFFICULTY_OPTIONS}
-            disabled={generating}
-          />
-        </div>
-
+      {/* Materials Selection */}
+      {materials.length > 0 ? (
         <div>
           <label className="mb-2 block text-sm font-medium text-secondary-700">
-            Tipos de preguntas
+            Material de referencia
           </label>
-          <div className="flex flex-wrap gap-2">
-            {QUESTION_TYPES.map((type) => (
-              <button
-                key={type.value}
-                type="button"
-                onClick={() => toggleType(type.value)}
-                disabled={generating}
-                className={`rounded-full px-3 py-1.5 text-sm font-medium transition-colors ${
-                  selectedTypes.has(type.value)
-                    ? 'bg-primary-600 text-white'
-                    : 'bg-secondary-100 text-secondary-600 hover:bg-secondary-200'
-                } disabled:opacity-50`}
+          <div className="space-y-2 rounded-lg border border-secondary-200 p-3">
+            {materials.map((material) => (
+              <label
+                key={material.id}
+                className={`flex cursor-pointer items-center gap-3 rounded-lg p-2 transition-colors ${
+                  selectedMaterials.has(material.id)
+                    ? 'bg-primary-50'
+                    : 'hover:bg-secondary-50'
+                }`}
               >
-                {type.label}
-              </button>
+                <input
+                  type="checkbox"
+                  checked={selectedMaterials.has(material.id)}
+                  onChange={() => toggleMaterial(material.id)}
+                  disabled={generating}
+                  className="h-4 w-4 rounded border-secondary-300 text-primary-600 focus:ring-primary-500"
+                />
+                <span className="flex h-8 w-8 items-center justify-center rounded bg-primary-100 text-xs font-bold text-primary-700">
+                  {material.file_type.toUpperCase().slice(0, 3)}
+                </span>
+                <span className="text-sm text-secondary-800">{material.title}</span>
+              </label>
             ))}
           </div>
+          <p className="mt-1.5 text-xs text-secondary-500">
+            Para archivos PDF/DOC, copia y pega el texto relevante en el campo de abajo.
+          </p>
         </div>
+      ) : (
+        <div className="rounded-lg border border-yellow-200 bg-yellow-50 p-4 text-sm text-yellow-800">
+          <p className="font-medium">No hay materiales subidos</p>
+          <p className="mt-1 text-yellow-700">
+            Sube materiales en la sección "Material de referencia" o ingresa el contenido directamente abajo.
+          </p>
+        </div>
+      )}
 
-        <Button
-          onClick={handleGenerate}
-          loading={generating}
-          disabled={!materialContent.trim() || generating}
-          className="w-full"
-        >
-          {generating ? 'Generando preguntas...' : 'Generar preguntas con IA'}
-        </Button>
+      {/* Additional Content */}
+      <div>
+        <label className="mb-1.5 block text-sm font-medium text-secondary-700">
+          {materials.length > 0 ? 'Contenido adicional (texto de PDFs, notas, etc.)' : 'Contenido del material'}
+        </label>
+        <Textarea
+          value={additionalContent}
+          onChange={(e) => setAdditionalContent(e.target.value)}
+          placeholder="Pega aquí el texto de tus documentos PDF, apuntes o cualquier contenido adicional..."
+          rows={6}
+          disabled={generating}
+        />
       </div>
+
+      {/* Generation Options */}
+      <div className="grid gap-4 sm:grid-cols-2">
+        <Input
+          type="number"
+          label="Número de preguntas"
+          value={questionCount}
+          onChange={(e) => setQuestionCount(Math.max(1, Math.min(20, parseInt(e.target.value) || 1)))}
+          min={1}
+          max={20}
+          disabled={generating}
+        />
+
+        <Select
+          label="Dificultad"
+          value={difficulty}
+          onChange={(e) => setDifficulty(e.target.value as 'easy' | 'medium' | 'hard')}
+          options={DIFFICULTY_OPTIONS}
+          disabled={generating}
+        />
+      </div>
+
+      <div>
+        <label className="mb-2 block text-sm font-medium text-secondary-700">
+          Tipos de preguntas
+        </label>
+        <div className="flex flex-wrap gap-2">
+          {QUESTION_TYPES.map((type) => (
+            <button
+              key={type.value}
+              type="button"
+              onClick={() => toggleType(type.value)}
+              disabled={generating}
+              className={`rounded-full px-3 py-1.5 text-sm font-medium transition-colors ${
+                selectedTypes.has(type.value)
+                  ? 'bg-primary-600 text-white'
+                  : 'bg-secondary-100 text-secondary-600 hover:bg-secondary-200'
+              } disabled:opacity-50`}
+            >
+              {type.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <Button
+        onClick={handleGenerate}
+        loading={generating}
+        disabled={generating}
+        className="w-full"
+      >
+        {generating ? 'Generando preguntas...' : 'Generar preguntas con IA'}
+      </Button>
 
       {/* Generating State */}
       {generating && (
-        <div className="flex flex-col items-center justify-center py-8 text-center">
-          <LoadingSpinner size="lg" className="text-primary-600" />
-          <p className="mt-4 text-sm text-secondary-600">
+        <div className="flex flex-col items-center justify-center py-4 text-center">
+          <p className="text-sm text-secondary-600">
             Analizando el material y generando preguntas...
           </p>
           <p className="mt-1 text-xs text-secondary-400">
@@ -198,10 +313,10 @@ export function QuestionGenerator({ onAddQuestions, loading: externalLoading }: 
 
       {/* Generated Questions */}
       {generatedQuestions.length > 0 && (
-        <div className="space-y-4">
+        <div className="space-y-4 border-t border-secondary-200 pt-4">
           <div className="flex items-center justify-between">
             <h3 className="font-semibold text-secondary-900">
-              Preguntas generadas ({selectedQuestions.size}/{generatedQuestions.length} seleccionadas)
+              Preguntas generadas ({selectedQuestions.size}/{generatedQuestions.length})
             </h3>
             <div className="flex gap-2">
               <Button
@@ -209,19 +324,19 @@ export function QuestionGenerator({ onAddQuestions, loading: externalLoading }: 
                 size="sm"
                 onClick={() => setSelectedQuestions(new Set(generatedQuestions.map((_, i) => i)))}
               >
-                Seleccionar todas
+                Todas
               </Button>
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={() => setSelectedQuestions(new Set())}
               >
-                Deseleccionar todas
+                Ninguna
               </Button>
             </div>
           </div>
 
-          <div className="max-h-96 space-y-3 overflow-y-auto">
+          <div className="max-h-72 space-y-3 overflow-y-auto">
             {generatedQuestions.map((question, index) => (
               <div
                 key={index}

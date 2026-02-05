@@ -99,11 +99,15 @@ CREATE TABLE question_bank (
   question_text TEXT NOT NULL,
   options JSONB,
   correct_answer JSONB,
+  terms JSONB, -- For matching questions
   points INTEGER DEFAULT 10,
   explanation TEXT,
   is_public BOOLEAN DEFAULT false,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
+
+-- Run this if you already have the table:
+-- ALTER TABLE question_bank ADD COLUMN IF NOT EXISTS terms JSONB;
 
 -- ============================================
 -- INDEXES

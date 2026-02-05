@@ -28,8 +28,9 @@ export interface QuestionBankItem {
   tags: string[] | null
   type: QuestionType
   question_text: string
-  options: unknown
+  options: string[] | null
   correct_answer: unknown
+  terms: MatchingTerm[] | null
   points: number
   explanation: string | null
   is_public: boolean

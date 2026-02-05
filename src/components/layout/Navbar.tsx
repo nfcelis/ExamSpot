@@ -36,12 +36,20 @@ export function Navbar() {
                 Dashboard
               </Link>
               {isTeacher && (
-                <Link
-                  to="/exams/new"
-                  className="rounded-lg bg-primary-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-primary-700"
-                >
-                  Crear Examen
-                </Link>
+                <>
+                  <Link
+                    to="/question-bank"
+                    className="text-sm font-medium text-secondary-600 hover:text-secondary-900"
+                  >
+                    Banco de Preguntas
+                  </Link>
+                  <Link
+                    to="/exams/new"
+                    className="rounded-lg bg-primary-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-primary-700"
+                  >
+                    Crear Examen
+                  </Link>
+                </>
               )}
               {isStudent && (
                 <>

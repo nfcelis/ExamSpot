@@ -4,6 +4,7 @@ import { Card } from '../components/common/Card'
 import { ExamForm } from '../components/exam/ExamForm'
 import { useCreateExam } from '../hooks/useExams'
 import type { ExamFormValues } from '../lib/validators'
+import toast from 'react-hot-toast'
 
 export function ExamCreatePage() {
   const navigate = useNavigate()
@@ -17,9 +18,13 @@ export function ExamCreatePage() {
         is_public: data.is_public,
         time_limit: data.time_limit,
         randomize_order: data.randomize_order,
+        status: data.publish_immediately ? 'published' : 'draft',
       },
       {
         onSuccess: (exam) => {
+          if (data.publish_immediately) {
+            toast.success('Examen creado y publicado')
+          }
           navigate(`/exams/${exam.id}/edit`)
         },
       }

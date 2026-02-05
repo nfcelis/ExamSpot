@@ -13,6 +13,7 @@ import { ExamEditPage } from './pages/ExamEditPage'
 import { ExamTakePage } from './pages/ExamTakePage'
 import { ExamResultsPage } from './pages/ExamResultsPage'
 import { HistoryPage } from './pages/HistoryPage'
+import { QuestionBankPage } from './pages/QuestionBankPage'
 import { NotFoundPage } from './pages/NotFoundPage'
 
 const queryClient = new QueryClient({
@@ -86,6 +87,14 @@ function AppRoutes() {
         element={
           <ProtectedRoute requireRole="student">
             <HistoryPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/question-bank"
+        element={
+          <ProtectedRoute requireRole="teacher">
+            <QuestionBankPage />
           </ProtectedRoute>
         }
       />

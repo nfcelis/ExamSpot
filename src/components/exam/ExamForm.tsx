@@ -11,13 +11,15 @@ interface ExamFormProps {
   onSubmit: (data: ExamFormValues) => void
   loading?: boolean
   exam?: Exam
+  showPublishOption?: boolean
 }
 
-export function ExamForm({ defaultValues, onSubmit, loading, exam }: ExamFormProps) {
+export function ExamForm({ defaultValues, onSubmit, loading, exam, showPublishOption = true }: ExamFormProps) {
   const {
     register,
     handleSubmit,
     watch,
+    setValue,
     formState: { errors },
   } = useForm({
     resolver: zodResolver(examFormSchema),
@@ -27,11 +29,21 @@ export function ExamForm({ defaultValues, onSubmit, loading, exam }: ExamFormPro
       is_public: true,
       time_limit: null as number | null,
       randomize_order: false,
+      publish_immediately: false,
       ...defaultValues,
     },
   })
 
-  const hasTimeLimit = watch('time_limit') !== null && watch('time_limit') !== undefined
+  const timeLimit = watch('time_limit')
+  const hasTimeLimit = timeLimit !== null && timeLimit !== undefined && timeLimit !== ''
+
+  const handleTimeLimitToggle = (checked: boolean) => {
+    if (checked) {
+      setValue('time_limit', 30) // Default to 30 minutes
+    } else {
+      setValue('time_limit', null)
+    }
+  }
 
   return (
     <form onSubmit={handleSubmit((data) => onSubmit(data as ExamFormValues))} className="space-y-6">
@@ -77,36 +89,59 @@ export function ExamForm({ defaultValues, onSubmit, loading, exam }: ExamFormPro
         </div>
       </div>
 
-      <div>
-        <div className="mb-2 flex items-center gap-3">
+      {/* Time Limit */}
+      <div className="space-y-2">
+        <div className="flex items-center gap-3">
           <input
             type="checkbox"
             id="hasTimeLimit"
             className="h-4 w-4 rounded border-secondary-300 text-primary-600 focus:ring-primary-500"
             checked={hasTimeLimit}
-            onChange={(e) => {
-              if (!e.target.checked) {
-                // Clear time limit by setting field value directly
-                const event = { target: { name: 'time_limit', value: null } }
-                register('time_limit').onChange(event as never)
-              }
-            }}
-            readOnly={hasTimeLimit}
+            onChange={(e) => handleTimeLimitToggle(e.target.checked)}
           />
           <label htmlFor="hasTimeLimit" className="text-sm font-medium text-secondary-700">
             Límite de tiempo
           </label>
         </div>
         {hasTimeLimit && (
-          <Input
-            id="time_limit"
-            type="number"
-            placeholder="Minutos"
-            error={errors.time_limit?.message}
-            {...register('time_limit', { valueAsNumber: true })}
-          />
+          <div className="ml-7">
+            <Input
+              id="time_limit"
+              type="number"
+              placeholder="Minutos"
+              min={1}
+              max={480}
+              error={errors.time_limit?.message}
+              {...register('time_limit', { valueAsNumber: true })}
+            />
+            <p className="mt-1 text-xs text-secondary-500">
+              Entre 1 y 480 minutos (8 horas)
+            </p>
+          </div>
         )}
       </div>
+
+      {/* Publish Option - Only show when creating a new exam */}
+      {showPublishOption && !exam && (
+        <div className="rounded-lg border border-primary-200 bg-primary-50 p-4">
+          <div className="flex items-center gap-3">
+            <input
+              type="checkbox"
+              id="publish_immediately"
+              className="h-4 w-4 rounded border-secondary-300 text-primary-600 focus:ring-primary-500"
+              {...register('publish_immediately')}
+            />
+            <div>
+              <label htmlFor="publish_immediately" className="text-sm font-medium text-primary-800">
+                Publicar inmediatamente
+              </label>
+              <p className="text-xs text-primary-600">
+                Si no se marca, el examen se guardará como borrador
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="flex justify-end gap-3">
         <Button type="submit" loading={loading}>

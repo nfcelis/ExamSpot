@@ -10,6 +10,7 @@ interface QuestionListProps {
   onDelete?: (id: string) => void
   onMoveUp?: (index: number) => void
   onMoveDown?: (index: number) => void
+  onSaveToBank?: (question: Question) => void
 }
 
 export function QuestionList({
@@ -18,6 +19,7 @@ export function QuestionList({
   onDelete,
   onMoveUp,
   onMoveDown,
+  onSaveToBank,
 }: QuestionListProps) {
   if (loading) {
     return (
@@ -63,6 +65,16 @@ export function QuestionList({
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                 </svg>
               </button>
+            )}
+            {onSaveToBank && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => onSaveToBank(question)}
+                className="text-primary-600 hover:text-primary-700"
+              >
+                Guardar
+              </Button>
             )}
             {onDelete && (
               <Button

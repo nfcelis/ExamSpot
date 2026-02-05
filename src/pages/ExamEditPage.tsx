@@ -10,6 +10,7 @@ import { QuestionForm } from '../components/question/QuestionForm'
 import { QuestionList } from '../components/question/QuestionList'
 import { MaterialUpload } from '../components/teacher/MaterialUpload'
 import { QuestionGenerator } from '../components/teacher/QuestionGenerator'
+import { QuestionBankBrowser } from '../components/teacher/QuestionBankBrowser'
 import { LoadingSpinner } from '../components/common/LoadingSpinner'
 import { useExam, useUpdateExam, useDeleteExam } from '../hooks/useExams'
 import {
@@ -19,14 +20,17 @@ import {
   useDeleteQuestion,
   useReorderQuestions,
 } from '../hooks/useQuestions'
+import { useCreateQuestionBankItem } from '../hooks/useQuestionBank'
 import type { CreateQuestionData } from '../services/questionService'
 import type { GeneratedQuestion } from '../services/aiService'
+import type { Question, QuestionBankItem } from '../types/question'
 
 export function ExamEditPage() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const [showQuestionModal, setShowQuestionModal] = useState(false)
   const [showGeneratorModal, setShowGeneratorModal] = useState(false)
+  const [showBankModal, setShowBankModal] = useState(false)
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
 
   const { data: exam, isLoading: examLoading } = useExam(id)
@@ -38,6 +42,7 @@ export function ExamEditPage() {
   const createQuestionsBatch = useCreateQuestionsBatch()
   const deleteQuestion = useDeleteQuestion()
   const reorderQuestions = useReorderQuestions()
+  const saveToBank = useCreateQuestionBankItem()
 
   if (examLoading) {
     return (
@@ -63,6 +68,10 @@ export function ExamEditPage() {
 
   const handleArchive = () => {
     updateExam.mutate({ id: exam.id, data: { status: 'archived' } })
+  }
+
+  const handleUnarchive = () => {
+    updateExam.mutate({ id: exam.id, data: { status: 'draft' } })
   }
 
   const handleDelete = () => {
@@ -96,6 +105,36 @@ export function ExamEditPage() {
 
     createQuestionsBatch.mutate(questionsData, {
       onSuccess: () => setShowGeneratorModal(false),
+    })
+  }
+
+  const handleAddFromBank = (bankQuestions: QuestionBankItem[]) => {
+    const questionsData: CreateQuestionData[] = bankQuestions.map((q, i) => ({
+      exam_id: exam.id,
+      type: q.type,
+      question_text: q.question_text,
+      options: q.options || null,
+      correct_answer: q.correct_answer,
+      terms: q.terms || null,
+      points: q.points || 10,
+      explanation: q.explanation || null,
+      order_index: questions.length + i,
+    }))
+
+    createQuestionsBatch.mutate(questionsData, {
+      onSuccess: () => setShowBankModal(false),
+    })
+  }
+
+  const handleSaveToBank = (question: Question) => {
+    saveToBank.mutate({
+      type: question.type,
+      question_text: question.question_text,
+      options: question.options,
+      correct_answer: question.correct_answer,
+      terms: question.terms,
+      points: question.points,
+      explanation: question.explanation,
     })
   }
 
@@ -145,6 +184,16 @@ export function ExamEditPage() {
                   Archivar
                 </Button>
               )}
+              {exam.status === 'archived' && (
+                <>
+                  <Button variant="secondary" onClick={handleUnarchive} loading={updateExam.isPending}>
+                    Restaurar
+                  </Button>
+                  <Button onClick={handlePublish} loading={updateExam.isPending}>
+                    Publicar
+                  </Button>
+                </>
+              )}
               <Button variant="danger" onClick={() => setShowDeleteDialog(true)}>
                 Eliminar
               </Button>
@@ -159,7 +208,13 @@ export function ExamEditPage() {
         <div>
           <div className="mb-4 flex items-center justify-between">
             <h2 className="text-lg font-semibold text-secondary-900">Preguntas</h2>
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2">
+              <Button variant="ghost" onClick={() => setShowBankModal(true)}>
+                <svg className="mr-1.5 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                </svg>
+                Desde banco
+              </Button>
               <Button variant="secondary" onClick={() => setShowGeneratorModal(true)}>
                 <svg className="mr-1.5 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
@@ -178,6 +233,7 @@ export function ExamEditPage() {
             onDelete={handleDeleteQuestion}
             onMoveUp={handleMoveUp}
             onMoveDown={handleMoveDown}
+            onSaveToBank={handleSaveToBank}
           />
         </div>
       </div>
@@ -215,7 +271,21 @@ export function ExamEditPage() {
         className="max-w-3xl"
       >
         <QuestionGenerator
+          examId={exam.id}
           onAddQuestions={handleAddGeneratedQuestions}
+          loading={createQuestionsBatch.isPending}
+        />
+      </Modal>
+
+      {/* Question Bank Browser Modal */}
+      <Modal
+        isOpen={showBankModal}
+        onClose={() => setShowBankModal(false)}
+        title="Agregar desde el banco de preguntas"
+        className="max-w-3xl"
+      >
+        <QuestionBankBrowser
+          onAddQuestions={handleAddFromBank}
           loading={createQuestionsBatch.isPending}
         />
       </Modal>

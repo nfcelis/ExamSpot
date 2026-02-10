@@ -36,7 +36,7 @@ export function QuestionBankBrowser({ onAddQuestions, loading }: QuestionBankBro
   })
 
   const categoryOptions = [
-    { value: '', label: 'Todas las categorías' },
+    { value: '', label: 'Todas las secciones' },
     ...categories.map((c) => ({ value: c, label: c })),
   ]
 

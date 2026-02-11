@@ -60,6 +60,12 @@ export function Navbar() {
                     Exámenes
                   </Link>
                   <Link
+                    to="/practice"
+                    className="text-sm font-medium text-secondary-600 hover:text-secondary-900"
+                  >
+                    Practicar
+                  </Link>
+                  <Link
                     to="/history"
                     className="text-sm font-medium text-secondary-600 hover:text-secondary-900"
                   >

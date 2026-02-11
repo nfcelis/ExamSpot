@@ -1,4 +1,4 @@
-export type ExamStatus = 'draft' | 'published' | 'archived'
+export type ExamStatus = 'draft' | 'published' | 'archived' | 'practice'
 
 export interface Exam {
   id: string

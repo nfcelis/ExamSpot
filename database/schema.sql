@@ -369,3 +369,98 @@ CREATE POLICY "Authenticated users can upload exam materials"
 CREATE POLICY "Users can delete own exam materials"
   ON storage.objects FOR DELETE
   USING (bucket_id = 'exam-materials' AND auth.uid() = owner);
+
+-- ============================================
+-- PRACTICE MODE
+-- ============================================
+
+-- Allow 'practice' status for student-generated exams
+-- Run this if you already have the table:
+-- ALTER TABLE exams DROP CONSTRAINT exams_status_check;
+-- ALTER TABLE exams ADD CONSTRAINT exams_status_check
+--   CHECK (status IN ('draft', 'published', 'archived', 'practice'));
+
+-- RPC: Get available sections with question counts for practice mode
+CREATE OR REPLACE FUNCTION public.get_practice_categories()
+RETURNS TABLE(category TEXT, question_count BIGINT)
+LANGUAGE plpgsql
+STABLE
+SECURITY DEFINER
+SET search_path = public
+AS $$
+BEGIN
+  RETURN QUERY
+  SELECT qb.category, COUNT(*) as question_count
+  FROM question_bank qb
+  WHERE qb.category IS NOT NULL
+  GROUP BY qb.category
+  ORDER BY qb.category;
+END;
+$$;
+
+-- RPC: Create a practice exam with random questions from a section
+CREATE OR REPLACE FUNCTION public.create_practice_exam(
+  p_category TEXT,
+  p_num_questions INTEGER
+)
+RETURNS UUID
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  v_exam_id UUID;
+  v_user_id UUID;
+  v_actual_count INTEGER;
+BEGIN
+  v_user_id := auth.uid();
+  IF v_user_id IS NULL THEN
+    RAISE EXCEPTION 'Not authenticated';
+  END IF;
+
+  IF p_num_questions < 1 OR p_num_questions > 100 THEN
+    RAISE EXCEPTION 'Number of questions must be between 1 and 100';
+  END IF;
+
+  -- Create the practice exam owned by the student
+  INSERT INTO exams (title, description, created_by, status, is_public, randomize_order)
+  VALUES (
+    'Práctica: ' || p_category,
+    'Examen de práctica - ' || p_num_questions || ' preguntas aleatorias',
+    v_user_id,
+    'practice',
+    false,
+    true
+  )
+  RETURNING id INTO v_exam_id;
+
+  -- Copy random questions from question_bank
+  INSERT INTO questions (exam_id, type, question_text, options, correct_answer, terms, points, explanation, order_index)
+  SELECT
+    v_exam_id,
+    qb.type,
+    qb.question_text,
+    qb.options,
+    qb.correct_answer,
+    qb.terms,
+    qb.points,
+    qb.explanation,
+    (ROW_NUMBER() OVER (ORDER BY random()))::INTEGER - 1
+  FROM question_bank qb
+  WHERE qb.category = p_category
+  ORDER BY random()
+  LIMIT p_num_questions;
+
+  GET DIAGNOSTICS v_actual_count = ROW_COUNT;
+
+  -- Update question count
+  UPDATE exams SET question_count = v_actual_count WHERE id = v_exam_id;
+
+  IF v_actual_count = 0 THEN
+    DELETE FROM exams WHERE id = v_exam_id;
+    RAISE EXCEPTION 'No questions found for category: %', p_category;
+  END IF;
+
+  RETURN v_exam_id;
+END;
+$$;

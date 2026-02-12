@@ -19,6 +19,10 @@ const statusConfig: Record<ExamStatus, { label: string; classes: string }> = {
     label: 'Archivado',
     classes: 'bg-yellow-100 text-yellow-700',
   },
+  practice: {
+    label: 'Práctica',
+    classes: 'bg-purple-100 text-purple-700',
+  },
 }
 
 export function Badge({ status, className }: BadgeProps) {

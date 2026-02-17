@@ -132,6 +132,9 @@ export interface GeneratedQuestion {
   terms?: Array<{ term: string; definition: string }>
   points: number
   explanation?: string
+  difficulty?: string
+  reference_material?: string
+  reference_page?: string
 }
 
 export interface GenerateQuestionsParams {

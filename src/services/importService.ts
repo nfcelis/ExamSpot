@@ -1,6 +1,17 @@
 import { supabase } from '../lib/supabase'
 import type { QuestionType, MatchingTerm } from '../types/question'
-import type { CreateQuestionBankData } from './questionBankService'
+interface CreateQuestionBankData {
+  category?: string | null
+  tags?: string[] | null
+  type: QuestionType
+  question_text: string
+  options?: string[] | null
+  correct_answer: unknown
+  terms?: MatchingTerm[] | null
+  points?: number
+  explanation?: string | null
+  is_public?: boolean
+}
 
 interface ImportedQuestion {
   id: number

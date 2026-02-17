@@ -1,138 +1,65 @@
 import { supabase } from '../lib/supabase'
-import type { QuestionBankItem, QuestionType, MatchingTerm } from '../types/question'
+import type { QuestionBankItem, QuestionType, QuestionDifficulty } from '../types/question'
+
+// ===== Filters =====
 
 export interface QuestionBankFilters {
   category?: string
+  subcategory?: string
   type?: QuestionType
+  difficulty?: QuestionDifficulty
+  tags?: string[]
   search?: string
-  onlyMine?: boolean
-  includeExamQuestions?: boolean
+  status?: string
 }
 
-export interface CreateQuestionBankData {
-  category?: string | null
-  tags?: string[] | null
-  type: QuestionType
-  question_text: string
-  options?: string[] | null
-  correct_answer: unknown
-  terms?: MatchingTerm[] | null
-  points?: number
-  explanation?: string | null
-  is_public?: boolean
+// ===== Para Profesores: Solo lectura de preguntas aprobadas =====
+
+export async function getApprovedQuestions(filters: QuestionBankFilters = {}): Promise<QuestionBankItem[]> {
+  let query = supabase
+    .from('question_bank')
+    .select('*')
+    .eq('status', 'approved')
+    .order('created_at', { ascending: false })
+
+  if (filters.category) query = query.eq('category', filters.category)
+  if (filters.subcategory) query = query.eq('subcategory', filters.subcategory)
+  if (filters.type) query = query.eq('type', filters.type)
+  if (filters.difficulty) query = query.eq('difficulty', filters.difficulty)
+  if (filters.search) query = query.ilike('question_text', `%${filters.search}%`)
+  if (filters.tags && filters.tags.length > 0) {
+    query = query.contains('tags', filters.tags)
+  }
+
+  const { data, error } = await query
+  if (error) throw error
+  return data as QuestionBankItem[]
 }
 
-export interface UpdateQuestionBankData extends Partial<CreateQuestionBankData> {}
+export async function searchQuestions(searchQuery: string): Promise<QuestionBankItem[]> {
+  const { data, error } = await supabase
+    .from('question_bank')
+    .select('*')
+    .eq('status', 'approved')
+    .ilike('question_text', `%${searchQuery}%`)
 
-export async function getQuestionBank(filters?: QuestionBankFilters): Promise<QuestionBankItem[]> {
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return []
-
-  const results: QuestionBankItem[] = []
-
-  // 1. Get questions from question_bank table
-  let bankQuery = supabase.from('question_bank').select('*')
-
-  if (filters?.category) {
-    bankQuery = bankQuery.eq('category', filters.category)
-  }
-  if (filters?.type) {
-    bankQuery = bankQuery.eq('type', filters.type)
-  }
-  if (filters?.search) {
-    bankQuery = bankQuery.ilike('question_text', `%${filters.search}%`)
-  }
-  if (filters?.onlyMine) {
-    bankQuery = bankQuery.eq('created_by', user.id)
-  }
-
-  bankQuery = bankQuery.order('created_at', { ascending: false })
-
-  const { data: bankData, error: bankError } = await bankQuery
-  if (bankError) throw bankError
-
-  if (bankData) {
-    results.push(...(bankData as QuestionBankItem[]))
-  }
-
-  // 2. Get questions from exams owned by the user (if includeExamQuestions is true or default)
-  if (filters?.includeExamQuestions !== false) {
-    // First get the user's exam IDs
-    const { data: exams, error: examsError } = await supabase
-      .from('exams')
-      .select('id')
-      .eq('created_by', user.id)
-
-    if (examsError) throw examsError
-
-    if (exams && exams.length > 0) {
-      const examIds = exams.map((e) => e.id)
-
-      let questionsQuery = supabase
-        .from('questions')
-        .select('*, exams!inner(title)')
-        .in('exam_id', examIds)
-
-      if (filters?.type) {
-        questionsQuery = questionsQuery.eq('type', filters.type)
-      }
-      if (filters?.search) {
-        questionsQuery = questionsQuery.ilike('question_text', `%${filters.search}%`)
-      }
-
-      questionsQuery = questionsQuery.order('created_at', { ascending: false })
-
-      const { data: questionsData, error: questionsError } = await questionsQuery
-      if (questionsError) throw questionsError
-
-      if (questionsData) {
-        // Convert exam questions to QuestionBankItem format
-        const examQuestions: QuestionBankItem[] = questionsData.map((q: any) => ({
-          id: q.id,
-          created_by: user.id,
-          category: q.exams?.title || null, // Use exam title as category
-          tags: null,
-          type: q.type,
-          question_text: q.question_text,
-          options: q.options,
-          correct_answer: q.correct_answer,
-          terms: q.terms,
-          points: q.points,
-          explanation: q.explanation,
-          is_public: false,
-          created_at: q.created_at,
-          _source: 'exam', // Mark as from exam (for UI distinction)
-        }))
-
-        // Filter by category if specified (matches exam title)
-        if (filters?.category) {
-          results.push(...examQuestions.filter((q) => q.category === filters.category))
-        } else {
-          results.push(...examQuestions)
-        }
-      }
-    }
-  }
-
-  // Remove duplicates by question_text (prefer bank items over exam items)
-  const seen = new Set<string>()
-  const uniqueResults: QuestionBankItem[] = []
-
-  for (const item of results) {
-    const key = item.question_text.toLowerCase().trim()
-    if (!seen.has(key)) {
-      seen.add(key)
-      uniqueResults.push(item)
-    }
-  }
-
-  // Sort by created_at descending
-  uniqueResults.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
-
-  return uniqueResults
+  if (error) throw error
+  return data as QuestionBankItem[]
 }
 
-export async function getQuestionBankItem(id: string): Promise<QuestionBankItem> {
+export async function getQuestionsByCategory(category: string): Promise<QuestionBankItem[]> {
+  const { data, error } = await supabase
+    .from('question_bank')
+    .select('*')
+    .eq('status', 'approved')
+    .eq('category', category)
+    .order('subcategory')
+
+  if (error) throw error
+  return data as QuestionBankItem[]
+}
+
+export async function getQuestionById(id: string): Promise<QuestionBankItem> {
   const { data, error } = await supabase
     .from('question_bank')
     .select('*')
@@ -143,81 +70,76 @@ export async function getQuestionBankItem(id: string): Promise<QuestionBankItem>
   return data as QuestionBankItem
 }
 
-export async function createQuestionBankItem(itemData: CreateQuestionBankData): Promise<QuestionBankItem> {
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) throw new Error('No autenticado')
+// ===== Para Estudiantes (Práctica) =====
 
+export async function getRandomQuestionsForPractice(config: {
+  numQuestions?: number
+  categories?: string[] | null
+} = {}) {
   const { data, error } = await supabase
-    .from('question_bank')
-    .insert({
-      ...itemData,
-      created_by: user.id,
+    .rpc('get_random_questions_for_practice', {
+      num_questions: config.numQuestions || 10,
+      categories: config.categories || null
     })
-    .select()
-    .single()
 
   if (error) throw error
-  return data as QuestionBankItem
+  return data
 }
 
-export async function updateQuestionBankItem(
-  id: string,
-  itemData: UpdateQuestionBankData
-): Promise<QuestionBankItem> {
+// ===== Categorías =====
+
+export async function getAllCategories(): Promise<Record<string, string[]>> {
   const { data, error } = await supabase
     .from('question_bank')
-    .update(itemData)
-    .eq('id', id)
-    .select()
-    .single()
+    .select('category, subcategory')
+    .eq('status', 'approved')
 
   if (error) throw error
-  return data as QuestionBankItem
+
+  const categories: Record<string, Set<string>> = {}
+  data.forEach((item: { category: string; subcategory: string | null }) => {
+    if (!categories[item.category]) {
+      categories[item.category] = new Set()
+    }
+    if (item.subcategory) {
+      categories[item.category].add(item.subcategory)
+    }
+  })
+
+  const result: Record<string, string[]> = {}
+  Object.keys(categories).forEach(cat => {
+    result[cat] = Array.from(categories[cat])
+  })
+
+  return result
 }
 
-export async function deleteQuestionBankItem(id: string): Promise<void> {
-  const { error } = await supabase
+export async function getCategoryList(): Promise<string[]> {
+  const { data, error } = await supabase
     .from('question_bank')
-    .delete()
-    .eq('id', id)
+    .select('category')
+    .eq('status', 'approved')
 
   if (error) throw error
+
+  const categories = new Set<string>()
+  data.forEach((d: { category: string }) => {
+    if (d.category) categories.add(d.category)
+  })
+
+  return Array.from(categories).sort()
+}
+
+// ===== Legacy compatibility =====
+
+export async function getQuestionBank(filters?: QuestionBankFilters): Promise<QuestionBankItem[]> {
+  return getApprovedQuestions(filters || {})
+}
+
+export async function getQuestionBankItem(id: string): Promise<QuestionBankItem> {
+  return getQuestionById(id)
 }
 
 export async function getCategories(): Promise<string[]> {
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return []
-
-  const categories = new Set<string>()
-
-  // Get categories from question_bank
-  const { data: bankData, error: bankError } = await supabase
-    .from('question_bank')
-    .select('category')
-    .eq('created_by', user.id)
-    .not('category', 'is', null)
-
-  if (bankError) throw bankError
-
-  if (bankData) {
-    bankData.forEach((d) => {
-      if (d.category) categories.add(d.category)
-    })
-  }
-
-  // Get exam titles as categories
-  const { data: examsData, error: examsError } = await supabase
-    .from('exams')
-    .select('title')
-    .eq('created_by', user.id)
-
-  if (examsError) throw examsError
-
-  if (examsData) {
-    examsData.forEach((e) => {
-      if (e.title) categories.add(e.title)
-    })
-  }
-
-  return Array.from(categories).sort()
+  return getCategoryList()
 }

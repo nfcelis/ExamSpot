@@ -8,6 +8,7 @@ export function Navbar() {
 
   const isTeacher = profile?.role === 'teacher'
   const isStudent = profile?.role === 'student'
+  const isAdmin = profile?.role === 'admin'
 
   const handleSignOut = async () => {
     await signOut()
@@ -17,7 +18,7 @@ export function Navbar() {
   return (
     <nav className="border-b border-secondary-200 bg-white">
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
-        <Link to="/dashboard" className="flex items-center gap-2">
+        <Link to={isAdmin ? '/admin' : '/dashboard'} className="flex items-center gap-2">
           <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary-600 text-sm font-bold text-white">
             ES
           </div>
@@ -29,14 +30,48 @@ export function Navbar() {
         {user && (
           <div className="flex items-center gap-3 sm:gap-6">
             <div className="flex items-center gap-2 sm:gap-4">
-              <Link
-                to="/dashboard"
-                className="text-sm font-medium text-secondary-600 hover:text-secondary-900"
-              >
-                Dashboard
-              </Link>
+              {isAdmin && (
+                <>
+                  <Link
+                    to="/admin"
+                    className="text-sm font-medium text-secondary-600 hover:text-secondary-900"
+                  >
+                    Dashboard
+                  </Link>
+                  <Link
+                    to="/admin/questions"
+                    className="text-sm font-medium text-secondary-600 hover:text-secondary-900"
+                  >
+                    Banco
+                  </Link>
+                  <Link
+                    to="/admin/generate"
+                    className="text-sm font-medium text-secondary-600 hover:text-secondary-900"
+                  >
+                    Generar IA
+                  </Link>
+                  <Link
+                    to="/admin/pending"
+                    className="text-sm font-medium text-secondary-600 hover:text-secondary-900"
+                  >
+                    Pendientes
+                  </Link>
+                  <Link
+                    to="/admin/practice-config"
+                    className="text-sm font-medium text-secondary-600 hover:text-secondary-900"
+                  >
+                    Config
+                  </Link>
+                </>
+              )}
               {isTeacher && (
                 <>
+                  <Link
+                    to="/dashboard"
+                    className="text-sm font-medium text-secondary-600 hover:text-secondary-900"
+                  >
+                    Dashboard
+                  </Link>
                   <Link
                     to="/question-bank"
                     className="text-sm font-medium text-secondary-600 hover:text-secondary-900"
@@ -81,7 +116,7 @@ export function Navbar() {
                   {profile?.full_name || profile?.email}
                 </p>
                 <p className="text-xs capitalize text-secondary-500">
-                  {profile?.role}
+                  {profile?.role === 'admin' ? 'Administrador' : profile?.role === 'teacher' ? 'Profesor' : 'Estudiante'}
                 </p>
               </div>
               <Button variant="ghost" size="sm" onClick={handleSignOut}>

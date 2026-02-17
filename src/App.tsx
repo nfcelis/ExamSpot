@@ -17,6 +17,13 @@ import { QuestionBankPage } from './pages/QuestionBankPage'
 import { PracticePage } from './pages/PracticePage'
 import { NotFoundPage } from './pages/NotFoundPage'
 
+// Admin pages
+import { AdminDashboard } from './pages/admin/Dashboard'
+import { QuestionBankManager } from './pages/admin/QuestionBankManager'
+import { QuestionGenerator } from './pages/admin/QuestionGenerator'
+import { PendingQuestionsReview } from './pages/admin/PendingQuestionsReview'
+import { PracticeConfigPage } from './pages/admin/PracticeConfig'
+
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
@@ -107,6 +114,49 @@ function AppRoutes() {
           </ProtectedRoute>
         }
       />
+
+      {/* Admin Routes */}
+      <Route
+        path="/admin"
+        element={
+          <ProtectedRoute requireRole="admin">
+            <AdminDashboard />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/questions"
+        element={
+          <ProtectedRoute requireRole="admin">
+            <QuestionBankManager />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/generate"
+        element={
+          <ProtectedRoute requireRole="admin">
+            <QuestionGenerator />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/pending"
+        element={
+          <ProtectedRoute requireRole="admin">
+            <PendingQuestionsReview />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/practice-config"
+        element={
+          <ProtectedRoute requireRole="admin">
+            <PracticeConfigPage />
+          </ProtectedRoute>
+        }
+      />
+
       <Route path="*" element={<NotFoundPage />} />
     </Routes>
   )

@@ -1,31 +1,140 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { PageLayout } from '../components/layout/PageLayout'
 import { Card } from '../components/common/Card'
 import { Button } from '../components/common/Button'
 import { LoadingSpinner } from '../components/common/LoadingSpinner'
-import { usePracticeCategories, useCreatePracticeExam } from '../hooks/usePractice'
+import { getPracticeConfig } from '../services/adminService'
+import { getCategoryList } from '../services/questionBankService'
+import { supabase } from '../lib/supabase'
+import type { PracticeConfig } from '../types/exam'
+import toast from 'react-hot-toast'
 
 export function PracticePage() {
   const navigate = useNavigate()
-  const { data: categories = [], isLoading } = usePracticeCategories()
-  const createExam = useCreatePracticeExam()
+  const [config, setConfig] = useState<PracticeConfig | null>(null)
+  const [categories, setCategories] = useState<string[]>([])
+  const [selectedCategories, setSelectedCategories] = useState<Set<string>>(new Set())
+  const [loading, setLoading] = useState(true)
+  const [generating, setGenerating] = useState(false)
 
-  const [selectedCategory, setSelectedCategory] = useState<string | null>(null)
-  const [numQuestions, setNumQuestions] = useState(10)
-
-  const selected = categories.find((c) => c.category === selectedCategory)
-  const maxQuestions = selected?.question_count ?? 10
-
-  const handleGenerate = () => {
-    if (!selectedCategory) return
-    createExam.mutate(
-      { category: selectedCategory, numQuestions },
-      {
-        onSuccess: (examId) => {
-          navigate(`/exams/${examId}`)
-        },
+  useEffect(() => {
+    async function load() {
+      try {
+        const [configData, cats] = await Promise.all([
+          getPracticeConfig(),
+          getCategoryList(),
+        ])
+        setConfig(configData)
+        setCategories(cats)
+      } catch (err) {
+        console.error('Error loading practice config:', err)
+        toast.error('Error al cargar configuración de práctica')
+      } finally {
+        setLoading(false)
       }
+    }
+    load()
+  }, [])
+
+  const toggleCategory = (cat: string) => {
+    setSelectedCategories(prev => {
+      const next = new Set(prev)
+      if (next.has(cat)) {
+        next.delete(cat)
+      } else {
+        next.add(cat)
+      }
+      return next
+    })
+  }
+
+  const handleStartPractice = async () => {
+    if (!config) return
+    setGenerating(true)
+
+    try {
+      const categoriesParam = selectedCategories.size > 0
+        ? Array.from(selectedCategories)
+        : null
+
+      // Get random questions using the RPC function
+      const { data: questions, error } = await supabase
+        .rpc('get_random_questions_for_practice', {
+          num_questions: config.questions_per_practice,
+          categories: categoriesParam,
+        })
+
+      if (error) throw error
+      if (!questions || questions.length === 0) {
+        toast.error('No hay suficientes preguntas disponibles')
+        return
+      }
+
+      // Create a practice exam
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) throw new Error('No autenticado')
+
+      const { data: exam, error: examError } = await supabase
+        .from('exams')
+        .insert({
+          title: `Práctica - ${new Date().toLocaleDateString('es')}`,
+          description: `Práctica: ${questions.length} preguntas aleatorias`,
+          created_by: user.id,
+          status: 'published',
+          is_public: false,
+          randomize_order: true,
+          time_limit: config.time_limit_minutes,
+          question_count: questions.length,
+        })
+        .select()
+        .single()
+
+      if (examError) throw examError
+
+      // Add questions to exam via exam_questions
+      const examQuestions = questions.map((q: { id: string }, index: number) => ({
+        exam_id: exam.id,
+        question_bank_id: q.id,
+        order_index: index,
+      }))
+
+      const { error: eqError } = await supabase
+        .from('exam_questions')
+        .insert(examQuestions)
+
+      if (eqError) throw eqError
+
+      // Create attempt
+      const { error: attemptError } = await supabase
+        .from('exam_attempts')
+        .insert({
+          exam_id: exam.id,
+          user_id: user.id,
+          is_practice: true,
+          max_score: questions.reduce((sum: number, q: { points: number }) => sum + q.points, 0),
+        })
+        .select()
+        .single()
+
+      if (attemptError) throw attemptError
+
+      navigate(`/exams/${exam.id}`)
+    } catch (err) {
+      toast.error('Error al iniciar práctica')
+      console.error(err)
+    } finally {
+      setGenerating(false)
+    }
+  }
+
+  if (loading) {
+    return (
+      <PageLayout>
+        <div className="flex justify-center py-12">
+          <LoadingSpinner size="lg" className="text-primary-600" />
+        </div>
+      </PageLayout>
     )
   }
 
@@ -35,129 +144,93 @@ export function PracticePage() {
         <div className="mb-8">
           <h1 className="text-2xl font-bold text-secondary-900">Modo Práctica</h1>
           <p className="mt-1 text-secondary-500">
-            Selecciona una sección y genera un examen aleatorio para practicar.
+            Practica con preguntas aleatorias del banco aprobado.
           </p>
         </div>
 
-        {/* Selected category config panel */}
-        {selectedCategory && selected && (
+        {/* Practice Config Info */}
+        {config && (
           <Card className="mb-6 border-2 border-primary-200 bg-primary-50/30">
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h3 className="font-semibold text-secondary-900">{selectedCategory}</h3>
-                  <p className="text-sm text-secondary-500">
-                    {selected.question_count} preguntas disponibles
-                  </p>
-                </div>
-                <button
-                  onClick={() => setSelectedCategory(null)}
-                  className="text-secondary-400 hover:text-secondary-600"
-                >
-                  <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                </button>
-              </div>
-
+            <div className="grid gap-4 sm:grid-cols-3 text-center">
               <div>
-                <label className="mb-1 block text-sm font-medium text-secondary-700">
-                  Número de preguntas
-                </label>
-                <div className="flex items-center gap-4">
-                  <input
-                    type="range"
-                    min={1}
-                    max={maxQuestions}
-                    value={Math.min(numQuestions, maxQuestions)}
-                    onChange={(e) => setNumQuestions(Number(e.target.value))}
-                    className="h-2 flex-1 cursor-pointer appearance-none rounded-lg bg-secondary-200 accent-primary-600"
-                  />
-                  <input
-                    type="number"
-                    min={1}
-                    max={maxQuestions}
-                    value={Math.min(numQuestions, maxQuestions)}
-                    onChange={(e) => {
-                      const val = Number(e.target.value)
-                      if (val >= 1 && val <= maxQuestions) setNumQuestions(val)
-                    }}
-                    className="w-20 rounded-lg border border-secondary-300 px-3 py-2 text-center text-sm shadow-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
-                  />
+                <p className="text-2xl font-bold text-primary-600">{config.questions_per_practice}</p>
+                <p className="text-sm text-secondary-500">preguntas</p>
+              </div>
+              <div>
+                <p className="text-2xl font-bold text-primary-600">
+                  {config.time_limit_minutes ? `${config.time_limit_minutes} min` : 'Sin límite'}
+                </p>
+                <p className="text-sm text-secondary-500">tiempo</p>
+              </div>
+              <div>
+                <p className="text-sm text-secondary-500">Distribución</p>
+                <div className="mt-1 flex justify-center gap-2">
+                  <span className="rounded bg-green-100 px-2 py-0.5 text-xs font-medium text-green-700">
+                    {config.difficulty_distribution.easy}% Fácil
+                  </span>
+                  <span className="rounded bg-yellow-100 px-2 py-0.5 text-xs font-medium text-yellow-700">
+                    {config.difficulty_distribution.medium}% Medio
+                  </span>
+                  <span className="rounded bg-red-100 px-2 py-0.5 text-xs font-medium text-red-700">
+                    {config.difficulty_distribution.hard}% Difícil
+                  </span>
                 </div>
               </div>
-
-              <Button
-                onClick={handleGenerate}
-                loading={createExam.isPending}
-                className="w-full"
-              >
-                Comenzar Práctica ({Math.min(numQuestions, maxQuestions)} preguntas)
-              </Button>
             </div>
           </Card>
         )}
 
-        {/* Category grid */}
-        {isLoading ? (
-          <div className="flex justify-center py-12">
-            <LoadingSpinner size="lg" className="text-primary-600" />
-          </div>
-        ) : categories.length === 0 ? (
-          <Card className="py-12 text-center">
-            <svg
-              className="mx-auto h-12 w-12 text-secondary-300"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={1.5}
-                d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25"
-              />
-            </svg>
-            <h3 className="mt-4 text-lg font-medium text-secondary-900">
-              No hay secciones disponibles
-            </h3>
-            <p className="mt-1 text-sm text-secondary-500">
-              Contacta a tu profesor para que agregue preguntas al banco.
-            </p>
-          </Card>
-        ) : (
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {categories.map((cat) => (
-              <Card
-                key={cat.category}
-                className={`cursor-pointer transition-all hover:border-primary-300 hover:shadow-md ${
-                  selectedCategory === cat.category
-                    ? 'border-primary-500 ring-2 ring-primary-500'
-                    : ''
-                }`}
-              >
+        {/* Category Selection */}
+        <Card className="mb-6">
+          <h3 className="mb-3 font-semibold text-secondary-900">
+            Seleccionar categorías (opcional)
+          </h3>
+          <p className="mb-4 text-sm text-secondary-500">
+            Si no seleccionas ninguna, se incluirán preguntas de todas las categorías.
+          </p>
+
+          {categories.length === 0 ? (
+            <p className="text-sm text-secondary-400">No hay categorías disponibles.</p>
+          ) : (
+            <div className="flex flex-wrap gap-2">
+              {categories.map((cat) => (
                 <button
-                  className="w-full text-left"
-                  onClick={() => {
-                    setSelectedCategory(cat.category)
-                    setNumQuestions(Math.min(10, cat.question_count))
-                  }}
+                  key={cat}
+                  onClick={() => toggleCategory(cat)}
+                  className={`rounded-lg border px-3 py-2 text-sm font-medium transition-colors ${
+                    selectedCategories.has(cat)
+                      ? 'border-primary-500 bg-primary-50 text-primary-700'
+                      : 'border-secondary-300 bg-white text-secondary-600 hover:bg-secondary-50'
+                  }`}
                 >
-                  <h3 className="font-semibold text-secondary-900">{cat.category}</h3>
-                  <p className="mt-2 text-sm text-secondary-500">
-                    {cat.question_count} pregunta{cat.question_count !== 1 ? 's' : ''}
-                  </p>
-                  <div className="mt-3 flex items-center text-xs font-medium text-primary-600">
-                    Practicar
-                    <svg className="ml-1 h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                    </svg>
-                  </div>
+                  {cat}
                 </button>
-              </Card>
-            ))}
-          </div>
-        )}
+              ))}
+            </div>
+          )}
+
+          {selectedCategories.size > 0 && (
+            <button
+              onClick={() => setSelectedCategories(new Set())}
+              className="mt-3 text-sm text-secondary-500 hover:text-secondary-700"
+            >
+              Deseleccionar todas
+            </button>
+          )}
+        </Card>
+
+        {/* Start Button */}
+        <Button
+          onClick={handleStartPractice}
+          loading={generating}
+          size="lg"
+          className="w-full"
+        >
+          {generating
+            ? 'Preparando práctica...'
+            : `Comenzar Práctica (${config?.questions_per_practice || 10} preguntas)`
+          }
+        </Button>
       </div>
     </PageLayout>
   )

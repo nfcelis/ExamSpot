@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { PageLayout } from '../components/layout/PageLayout'
 import { Card } from '../components/common/Card'
@@ -6,43 +6,61 @@ import { Button } from '../components/common/Button'
 import { Badge } from '../components/common/Badge'
 import { Modal } from '../components/common/Modal'
 import { ConfirmDialog } from '../components/common/ConfirmDialog'
-import { QuestionForm } from '../components/question/QuestionForm'
-import { QuestionList } from '../components/question/QuestionList'
 import { MaterialUpload } from '../components/teacher/MaterialUpload'
-import { QuestionGenerator } from '../components/teacher/QuestionGenerator'
 import { QuestionBankBrowser } from '../components/teacher/QuestionBankBrowser'
 import { LoadingSpinner } from '../components/common/LoadingSpinner'
 import { useExam, useUpdateExam, useDeleteExam } from '../hooks/useExams'
 import {
-  useQuestions,
-  useCreateQuestion,
-  useCreateQuestionsBatch,
-  useDeleteQuestion,
-  useReorderQuestions,
-} from '../hooks/useQuestions'
-import { useCreateQuestionBankItem } from '../hooks/useQuestionBank'
-import type { CreateQuestionData } from '../services/questionService'
-import type { GeneratedQuestion } from '../services/aiService'
-import type { Question, QuestionBankItem } from '../types/question'
+  getExamQuestions,
+  getExamQuestionIds,
+  addMultipleQuestionsToExam,
+  removeQuestionFromExam,
+} from '../services/examService'
+import type { QuestionBankItem } from '../types/question'
+import toast from 'react-hot-toast'
+
+const typeLabels: Record<string, string> = {
+  multiple_choice: 'Opción Múltiple',
+  open_ended: 'Respuesta Abierta',
+  fill_blank: 'Rellenar Espacios',
+  matching: 'Emparejar',
+}
 
 export function ExamEditPage() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
-  const [showQuestionModal, setShowQuestionModal] = useState(false)
-  const [showGeneratorModal, setShowGeneratorModal] = useState(false)
   const [showBankModal, setShowBankModal] = useState(false)
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
+  const [examQuestions, setExamQuestions] = useState<QuestionBankItem[]>([])
+  const [examQuestionIds, setExamQuestionIds] = useState<string[]>([])
+  const [questionsLoading, setQuestionsLoading] = useState(true)
+  const [addingQuestions, setAddingQuestions] = useState(false)
+  const [removingId, setRemovingId] = useState<string | null>(null)
 
   const { data: exam, isLoading: examLoading } = useExam(id)
-  const { data: questions = [], isLoading: questionsLoading } = useQuestions(id)
-
   const updateExam = useUpdateExam()
   const deleteExam = useDeleteExam()
-  const createQuestion = useCreateQuestion()
-  const createQuestionsBatch = useCreateQuestionsBatch()
-  const deleteQuestion = useDeleteQuestion()
-  const reorderQuestions = useReorderQuestions()
-  const saveToBank = useCreateQuestionBankItem()
+
+  const loadQuestions = useCallback(async () => {
+    if (!id) return
+    setQuestionsLoading(true)
+    try {
+      const [questions, ids] = await Promise.all([
+        getExamQuestions(id),
+        getExamQuestionIds(id),
+      ])
+      setExamQuestions(questions)
+      setExamQuestionIds(ids)
+    } catch (err) {
+      console.error('Error loading exam questions:', err)
+    } finally {
+      setQuestionsLoading(false)
+    }
+  }, [id])
+
+  useEffect(() => {
+    loadQuestions()
+  }, [loadQuestions])
 
   if (examLoading) {
     return (
@@ -80,76 +98,34 @@ export function ExamEditPage() {
     })
   }
 
-  const handleAddQuestion = (data: CreateQuestionData) => {
-    createQuestion.mutate(data, {
-      onSuccess: () => setShowQuestionModal(false),
-    })
+  const handleAddFromBank = async (bankQuestions: QuestionBankItem[]) => {
+    setAddingQuestions(true)
+    try {
+      const newIds = bankQuestions.map(q => q.id)
+      await addMultipleQuestionsToExam(exam.id, newIds)
+      toast.success(`${bankQuestions.length} pregunta${bankQuestions.length !== 1 ? 's' : ''} agregada${bankQuestions.length !== 1 ? 's' : ''}`)
+      setShowBankModal(false)
+      loadQuestions()
+    } catch (err) {
+      toast.error('Error al agregar preguntas')
+      console.error(err)
+    } finally {
+      setAddingQuestions(false)
+    }
   }
 
-  const handleDeleteQuestion = (questionId: string) => {
-    deleteQuestion.mutate({ id: questionId, examId: exam.id })
-  }
-
-  const handleAddGeneratedQuestions = (generatedQuestions: GeneratedQuestion[]) => {
-    const questionsData: CreateQuestionData[] = generatedQuestions.map((q, i) => ({
-      exam_id: exam.id,
-      type: q.type,
-      question_text: q.question_text,
-      options: q.options || null,
-      correct_answer: q.correct_answer,
-      terms: q.terms || null,
-      points: q.points || 10,
-      explanation: q.explanation || null,
-      order_index: questions.length + i,
-    }))
-
-    createQuestionsBatch.mutate(questionsData, {
-      onSuccess: () => setShowGeneratorModal(false),
-    })
-  }
-
-  const handleAddFromBank = (bankQuestions: QuestionBankItem[]) => {
-    const questionsData: CreateQuestionData[] = bankQuestions.map((q, i) => ({
-      exam_id: exam.id,
-      type: q.type,
-      question_text: q.question_text,
-      options: q.options || null,
-      correct_answer: q.correct_answer,
-      terms: q.terms || null,
-      points: q.points || 10,
-      explanation: q.explanation || null,
-      order_index: questions.length + i,
-    }))
-
-    createQuestionsBatch.mutate(questionsData, {
-      onSuccess: () => setShowBankModal(false),
-    })
-  }
-
-  const handleSaveToBank = (question: Question) => {
-    saveToBank.mutate({
-      type: question.type,
-      question_text: question.question_text,
-      options: question.options,
-      correct_answer: question.correct_answer,
-      terms: question.terms,
-      points: question.points,
-      explanation: question.explanation,
-    })
-  }
-
-  const handleMoveUp = (index: number) => {
-    if (index <= 0) return
-    const ids = questions.map((q) => q.id)
-    ;[ids[index - 1], ids[index]] = [ids[index], ids[index - 1]]
-    reorderQuestions.mutate({ examId: exam.id, orderedIds: ids })
-  }
-
-  const handleMoveDown = (index: number) => {
-    if (index >= questions.length - 1) return
-    const ids = questions.map((q) => q.id)
-    ;[ids[index], ids[index + 1]] = [ids[index + 1], ids[index]]
-    reorderQuestions.mutate({ examId: exam.id, orderedIds: ids })
+  const handleRemoveQuestion = async (questionBankId: string) => {
+    setRemovingId(questionBankId)
+    try {
+      await removeQuestionFromExam(exam.id, questionBankId)
+      toast.success('Pregunta removida del examen')
+      loadQuestions()
+    } catch (err) {
+      toast.error('Error al remover pregunta')
+      console.error(err)
+    } finally {
+      setRemovingId(null)
+    }
   }
 
   return (
@@ -167,7 +143,7 @@ export function ExamEditPage() {
                 <p className="mt-1 text-sm text-secondary-500">{exam.description}</p>
               )}
               <p className="mt-2 text-xs text-secondary-400">
-                {questions.length} preguntas
+                {examQuestions.length} preguntas
                 {exam.time_limit ? ` · ${exam.time_limit} min` : ''}
                 {exam.is_public ? ' · Público' : ' · Privado'}
               </p>
@@ -207,49 +183,109 @@ export function ExamEditPage() {
         {/* Questions Section */}
         <div>
           <div className="mb-4 flex items-center justify-between">
-            <h2 className="text-lg font-semibold text-secondary-900">Preguntas</h2>
-            <div className="flex flex-wrap gap-2">
-              <Button variant="ghost" onClick={() => setShowBankModal(true)}>
-                <svg className="mr-1.5 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
-                </svg>
-                Desde banco
-              </Button>
-              <Button variant="secondary" onClick={() => setShowGeneratorModal(true)}>
-                <svg className="mr-1.5 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                </svg>
-                Generar con IA
-              </Button>
-              <Button onClick={() => setShowQuestionModal(true)}>
-                Agregar pregunta
-              </Button>
-            </div>
+            <h2 className="text-lg font-semibold text-secondary-900">
+              Preguntas del Examen
+            </h2>
+            <Button onClick={() => setShowBankModal(true)}>
+              <svg className="mr-1.5 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+              </svg>
+              Agregar del Banco
+            </Button>
           </div>
 
-          <QuestionList
-            questions={questions}
-            loading={questionsLoading}
-            onDelete={handleDeleteQuestion}
-            onMoveUp={handleMoveUp}
-            onMoveDown={handleMoveDown}
-            onSaveToBank={handleSaveToBank}
-          />
+          {questionsLoading ? (
+            <div className="flex justify-center py-8">
+              <LoadingSpinner size="lg" className="text-primary-600" />
+            </div>
+          ) : examQuestions.length === 0 ? (
+            <Card className="py-12 text-center">
+              <svg className="mx-auto h-12 w-12 text-secondary-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+              </svg>
+              <h3 className="mt-4 text-lg font-medium text-secondary-900">Sin preguntas</h3>
+              <p className="mt-1 text-sm text-secondary-500">
+                Agrega preguntas del banco aprobado para este examen.
+              </p>
+              <Button onClick={() => setShowBankModal(true)} className="mt-4">
+                Agregar del Banco
+              </Button>
+            </Card>
+          ) : (
+            <div className="space-y-3">
+              {examQuestions.map((q, index) => (
+                <Card key={q.id} className="transition-all hover:shadow-md">
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="min-w-0 flex-1">
+                      <div className="mb-1 flex flex-wrap items-center gap-2">
+                        <span className="text-xs font-medium text-secondary-400">
+                          #{index + 1}
+                        </span>
+                        <span className="rounded-full bg-blue-100 px-2 py-0.5 text-xs font-medium text-blue-700">
+                          {typeLabels[q.type] || q.type}
+                        </span>
+                        <span className="text-xs text-secondary-400">
+                          {q.points} pts
+                        </span>
+                        {q.category && (
+                          <span className="text-xs text-secondary-400">
+                            {q.category}
+                          </span>
+                        )}
+                        {q.difficulty && (
+                          <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${
+                            q.difficulty === 'easy' ? 'bg-green-100 text-green-700' :
+                            q.difficulty === 'medium' ? 'bg-yellow-100 text-yellow-700' :
+                            'bg-red-100 text-red-700'
+                          }`}>
+                            {q.difficulty === 'easy' ? 'Fácil' : q.difficulty === 'medium' ? 'Medio' : 'Difícil'}
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-sm text-secondary-800">{q.question_text}</p>
+
+                      {q.type === 'multiple_choice' && q.options && (
+                        <div className="mt-2 space-y-1">
+                          {q.options.map((opt, idx) => (
+                            <div key={idx} className={`rounded px-2 py-0.5 text-xs ${
+                              idx === (q.correct_answer as number)
+                                ? 'bg-green-50 font-medium text-green-700'
+                                : 'text-secondary-500'
+                            }`}>
+                              {String.fromCharCode(65 + idx)}. {opt}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleRemoveQuestion(q.id)}
+                      loading={removingId === q.id}
+                    >
+                      Quitar
+                    </Button>
+                  </div>
+                </Card>
+              ))}
+            </div>
+          )}
         </div>
       </div>
 
-      {/* Add Question Modal */}
+      {/* Question Bank Browser Modal */}
       <Modal
-        isOpen={showQuestionModal}
-        onClose={() => setShowQuestionModal(false)}
-        title="Agregar pregunta"
-        className="max-w-2xl"
+        isOpen={showBankModal}
+        onClose={() => setShowBankModal(false)}
+        title="Agregar preguntas del banco"
+        className="max-w-3xl"
       >
-        <QuestionForm
-          examId={exam.id}
-          onSubmit={handleAddQuestion}
-          loading={createQuestion.isPending}
-          orderIndex={questions.length}
+        <QuestionBankBrowser
+          onAddQuestions={handleAddFromBank}
+          loading={addingQuestions}
+          excludeIds={examQuestionIds}
         />
       </Modal>
 
@@ -259,36 +295,9 @@ export function ExamEditPage() {
         onClose={() => setShowDeleteDialog(false)}
         onConfirm={handleDelete}
         title="Eliminar examen"
-        message="¿Estás seguro de que deseas eliminar este examen? Se eliminarán también todas las preguntas y los intentos asociados. Esta acción no se puede deshacer."
+        message="¿Estás seguro de que deseas eliminar este examen? Esta acción no se puede deshacer."
         loading={deleteExam.isPending}
       />
-
-      {/* AI Question Generator Modal */}
-      <Modal
-        isOpen={showGeneratorModal}
-        onClose={() => setShowGeneratorModal(false)}
-        title="Generar preguntas con IA"
-        className="max-w-3xl"
-      >
-        <QuestionGenerator
-          examId={exam.id}
-          onAddQuestions={handleAddGeneratedQuestions}
-          loading={createQuestionsBatch.isPending}
-        />
-      </Modal>
-
-      {/* Question Bank Browser Modal */}
-      <Modal
-        isOpen={showBankModal}
-        onClose={() => setShowBankModal(false)}
-        title="Agregar desde el banco de preguntas"
-        className="max-w-3xl"
-      >
-        <QuestionBankBrowser
-          onAddQuestions={handleAddFromBank}
-          loading={createQuestionsBatch.isPending}
-        />
-      </Modal>
     </PageLayout>
   )
 }

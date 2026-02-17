@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, Navigate } from 'react-router-dom'
 import { PageLayout } from '../components/layout/PageLayout'
 import { useAuth } from '../hooks/useAuth'
 import { Card } from '../components/common/Card'
@@ -12,6 +12,11 @@ import { formatDate } from '../lib/utils'
 
 export function DashboardPage() {
   const { profile } = useAuth()
+
+  // Admin goes to admin dashboard
+  if (profile?.role === 'admin') {
+    return <Navigate to="/admin" replace />
+  }
 
   return (
     <PageLayout>
@@ -63,9 +68,14 @@ function TeacherDashboard() {
         <h2 className="text-lg font-semibold text-secondary-900">
           Mis Exámenes
         </h2>
-        <Link to="/exams/new">
-          <Button>Crear Examen</Button>
-        </Link>
+        <div className="flex gap-2">
+          <Link to="/question-bank">
+            <Button variant="secondary">Banco de Preguntas</Button>
+          </Link>
+          <Link to="/exams/new">
+            <Button>Crear Examen</Button>
+          </Link>
+        </div>
       </div>
 
       <ExamList
@@ -89,7 +99,7 @@ function TeacherDashboard() {
               </div>
               <p className="font-medium text-secondary-700">Crear nuevo examen</p>
               <p className="mt-1 text-sm text-secondary-500">
-                Comienza a crear preguntas para tus estudiantes
+                Selecciona preguntas del banco aprobado
               </p>
             </Card>
           </Link>
@@ -149,16 +159,19 @@ function StudentDashboard() {
 
   return (
     <div className="space-y-6">
-      <div>
+      <div className="flex items-center justify-between">
         <h2 className="mb-4 text-lg font-semibold text-secondary-900">
           Exámenes Disponibles
         </h2>
-        <ExamList
-          exams={publishedExams}
-          loading={examsLoading}
-          emptyMessage="No hay exámenes disponibles en este momento."
-        />
+        <Link to="/practice">
+          <Button variant="secondary">Modo Práctica</Button>
+        </Link>
       </div>
+      <ExamList
+        exams={publishedExams}
+        loading={examsLoading}
+        emptyMessage="No hay exámenes disponibles en este momento."
+      />
 
       <div className="grid gap-4 sm:grid-cols-2">
         <Card>
@@ -222,7 +235,6 @@ function StudentDashboard() {
   )
 }
 
-// Extended type for attempts joined with exam data
 interface ExamAttemptWithExam {
   exams?: { title: string; description: string }
 }

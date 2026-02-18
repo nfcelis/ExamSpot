@@ -6,6 +6,7 @@ import { Button } from '../components/common/Button'
 import { Badge } from '../components/common/Badge'
 import { Modal } from '../components/common/Modal'
 import { ConfirmDialog } from '../components/common/ConfirmDialog'
+import { SafeHtml } from '../components/common/SafeHtml'
 import { MaterialUpload } from '../components/teacher/MaterialUpload'
 import { QuestionBankBrowser } from '../components/teacher/QuestionBankBrowser'
 import { LoadingSpinner } from '../components/common/LoadingSpinner'
@@ -242,17 +243,58 @@ export function ExamEditPage() {
                           </span>
                         )}
                       </div>
-                      <p className="text-sm text-secondary-800">{q.question_text}</p>
+                      <SafeHtml html={q.question_text} className="text-sm font-medium text-secondary-800" />
 
+                      {/* Multiple choice — opción correcta en verde */}
                       {q.type === 'multiple_choice' && q.options && (
                         <div className="mt-2 space-y-1">
-                          {q.options.map((opt, idx) => (
-                            <div key={idx} className={`rounded px-2 py-0.5 text-xs ${
-                              idx === (q.correct_answer as number)
-                                ? 'bg-green-50 font-medium text-green-700'
-                                : 'text-secondary-500'
-                            }`}>
-                              {String.fromCharCode(65 + idx)}. {opt}
+                          {q.options.map((opt, idx) => {
+                            const isCorrect = Array.isArray(q.correct_answer)
+                              ? (q.correct_answer as number[]).includes(idx)
+                              : idx === (q.correct_answer as number)
+                            return (
+                              <div key={idx} className={`rounded px-2 py-0.5 text-xs ${
+                                isCorrect
+                                  ? 'bg-green-50 font-medium text-green-700'
+                                  : 'text-secondary-500'
+                              }`}>
+                                {String.fromCharCode(65 + idx)}. <SafeHtml html={opt} inline />
+                              </div>
+                            )
+                          })}
+                        </div>
+                      )}
+
+                      {/* Respuesta abierta — muestra respuesta modelo */}
+                      {q.type === 'open_ended' && Boolean(q.correct_answer) && (
+                        <div className="mt-2 rounded bg-green-50 px-2 py-1.5 text-xs text-green-700">
+                          <span className="font-medium">Respuesta modelo: </span>
+                          {Array.isArray(q.correct_answer)
+                            ? (q.correct_answer as string[]).map((a, i) => (
+                                <span key={i}>{i > 0 && <span className="mx-1">·</span>}<SafeHtml html={a} inline /></span>
+                              ))
+                            : <SafeHtml html={q.correct_answer as string} inline />}
+                        </div>
+                      )}
+
+                      {/* Rellenar espacios — muestra las respuestas correctas */}
+                      {q.type === 'fill_blank' && Array.isArray(q.correct_answer) && (
+                        <div className="mt-2 rounded bg-green-50 px-2 py-1.5 text-xs text-green-700">
+                          <span className="font-medium">Respuestas: </span>
+                          {(q.correct_answer as string[]).map((a, i) => (
+                            <span key={i}>{i > 0 && <span className="mx-1">·</span>}<SafeHtml html={a} inline /></span>
+                          ))}
+                        </div>
+                      )}
+
+                      {/* Emparejar — muestra los pares término → definición */}
+                      {q.type === 'matching' && q.terms && (
+                        <div className="mt-2 space-y-1">
+                          {q.terms.map((pair, i) => (
+                            <div key={i} className="flex items-center gap-1.5 text-xs">
+                              <SafeHtml html={pair.term} className="rounded bg-secondary-100 px-1.5 py-0.5 text-secondary-700" inline />
+                              <span className="text-secondary-400">→</span>
+                              <SafeHtml html={pair.definition} className="text-green-700" inline />
                             </div>
                           ))}
                         </div>

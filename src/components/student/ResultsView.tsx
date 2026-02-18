@@ -1,3 +1,4 @@
+import React from 'react'
 import { Card } from '../common/Card'
 import { SafeHtml } from '../common/SafeHtml'
 import type { ExamAttempt, ExamAnswer } from '../../types/exam'
@@ -74,20 +75,16 @@ export function ResultsView({ attempt, answers, questions }: ResultsViewProps) {
               <SafeHtml html={question.question_text} className="font-medium text-secondary-900" />
 
               {/* User answer */}
-              <div className="rounded-lg border border-secondary-200 bg-secondary-50 p-3 text-sm">
+              <div className="rounded-lg border border-secondary-200 bg-secondary-50 p-3 text-sm text-secondary-700">
                 <span className="font-medium text-secondary-600">Tu respuesta: </span>
-                <span className="text-secondary-700">
-                  {renderAnswer(question, examAnswer?.user_answer)}
-                </span>
+                {renderAnswer(question, examAnswer?.user_answer)}
               </div>
 
               {/* Correct answer */}
               {examAnswer && !examAnswer.is_correct && question.type !== 'open_ended' && (
-                <div className="rounded-lg border border-green-200 bg-green-50 p-3 text-sm">
+                <div className="rounded-lg border border-green-200 bg-green-50 p-3 text-sm text-green-600">
                   <span className="font-medium text-green-700">Respuesta correcta: </span>
-                  <span className="text-green-600">
-                    {renderCorrectAnswer(question)}
-                  </span>
+                  {renderCorrectAnswer(question)}
                 </div>
               )}
 
@@ -173,31 +170,34 @@ function AIAnalysisBlock({ analysis }: { analysis: AIAnalysis }) {
   )
 }
 
-function renderAnswer(question: Question, answer: unknown): string {
+function renderAnswer(question: Question, answer: unknown): React.ReactNode {
   if (answer === undefined || answer === null) return 'Sin respuesta'
 
   switch (question.type) {
     case 'multiple_choice':
       if (typeof answer === 'number' && question.options) {
-        return question.options[answer]?.replace(/<[^>]+>/g, '') || 'Sin respuesta'
+        return <SafeHtml html={question.options[answer] ?? 'Sin respuesta'} inline />
       }
       if (Array.isArray(answer) && question.options) {
-        return (answer as number[])
-          .map((i) => question.options![i]?.replace(/<[^>]+>/g, '') || '')
-          .filter(Boolean)
-          .join(', ') || 'Sin respuesta'
+        return (answer as number[]).map((i, idx) => (
+          <span key={idx}>{idx > 0 && ', '}<SafeHtml html={question.options![i] ?? ''} inline /></span>
+        ))
       }
       return String(answer)
     case 'open_ended':
-      return String(answer)
+      return <SafeHtml html={String(answer)} inline />
     case 'fill_blank':
-      if (Array.isArray(answer)) return answer.join(', ')
-      return String(answer)
+      if (Array.isArray(answer)) {
+        return (answer as string[]).map((a, i) => (
+          <span key={i}>{i > 0 && ', '}<SafeHtml html={a} inline /></span>
+        ))
+      }
+      return <SafeHtml html={String(answer)} inline />
     case 'matching':
-      if (typeof answer === 'object') {
-        return Object.entries(answer as Record<string, string>)
-          .map(([term, def]) => `${term} → ${def}`)
-          .join('; ')
+      if (typeof answer === 'object' && answer !== null) {
+        return Object.entries(answer as Record<string, string>).map(([term, def], i) => (
+          <span key={i}>{i > 0 && '; '}<SafeHtml html={term} inline /> → <SafeHtml html={def} inline /></span>
+        ))
       }
       return String(answer)
     default:
@@ -205,30 +205,33 @@ function renderAnswer(question: Question, answer: unknown): string {
   }
 }
 
-function renderCorrectAnswer(question: Question): string {
+function renderCorrectAnswer(question: Question): React.ReactNode {
   switch (question.type) {
     case 'multiple_choice':
       if (typeof question.correct_answer === 'number' && question.options) {
-        return question.options[question.correct_answer]?.replace(/<[^>]+>/g, '') || ''
+        return <SafeHtml html={question.options[question.correct_answer] ?? ''} inline />
       }
       if (Array.isArray(question.correct_answer) && question.options) {
-        return (question.correct_answer as number[])
-          .map((i) => question.options![i]?.replace(/<[^>]+>/g, '') || '')
-          .filter(Boolean)
-          .join(', ')
+        return (question.correct_answer as number[]).map((i, idx) => (
+          <span key={idx}>{idx > 0 && ', '}<SafeHtml html={question.options![i] ?? ''} inline /></span>
+        ))
       }
-      return ''
+      return null
     case 'fill_blank':
       if (Array.isArray(question.correct_answer)) {
-        return (question.correct_answer as string[]).join(', ')
+        return (question.correct_answer as string[]).map((a, i) => (
+          <span key={i}>{i > 0 && ', '}<SafeHtml html={a} inline /></span>
+        ))
       }
-      return ''
+      return null
     case 'matching':
       if (question.terms) {
-        return question.terms.map((t) => `${t.term} → ${t.definition}`).join('; ')
+        return question.terms.map((t, i) => (
+          <span key={i}>{i > 0 && '; '}<SafeHtml html={t.term} inline /> → <SafeHtml html={t.definition} inline /></span>
+        ))
       }
-      return ''
+      return null
     default:
-      return ''
+      return null
   }
 }

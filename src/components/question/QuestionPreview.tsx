@@ -85,9 +85,11 @@ export function QuestionPreview({ question, index, showAnswer = false, compact =
       {question.type === 'open_ended' && showAnswer && (
         <div className="rounded-lg border border-green-300 bg-green-50 p-3 text-sm text-green-800">
           <span className="font-medium">Respuesta modelo: </span>
-          {typeof question.correct_answer === 'string'
-            ? question.correct_answer
-            : JSON.stringify(question.correct_answer)}
+          {Array.isArray(question.correct_answer)
+            ? (question.correct_answer as string[]).map((a, i) => (
+                <span key={i}>{i > 0 && <span className="mx-1">·</span>}<SafeHtml html={a} inline /></span>
+              ))
+            : <SafeHtml html={question.correct_answer as string} inline />}
         </div>
       )}
 
@@ -95,7 +97,9 @@ export function QuestionPreview({ question, index, showAnswer = false, compact =
       {question.type === 'fill_blank' && showAnswer && Array.isArray(question.correct_answer) && (
         <div className="rounded-lg border border-green-300 bg-green-50 p-3 text-sm text-green-800">
           <span className="font-medium">Respuestas: </span>
-          {(question.correct_answer as string[]).join(', ')}
+          {(question.correct_answer as string[]).map((a, i) => (
+            <span key={i}>{i > 0 && <span className="mx-1">·</span>}<SafeHtml html={a} inline /></span>
+          ))}
         </div>
       )}
 

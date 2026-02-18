@@ -290,7 +290,9 @@ export function QuestionBankManager() {
                   {q.type === 'fill_blank' && Array.isArray(q.correct_answer) && (
                     <div className="mt-2 rounded-lg border border-green-200 bg-green-50 px-3 py-2 text-sm text-green-700">
                       <span className="font-medium">Respuestas: </span>
-                      {(q.correct_answer as string[]).join(', ')}
+                      {(q.correct_answer as string[]).map((a, i) => (
+                        <span key={i}>{i > 0 && <span className="mx-1">·</span>}<SafeHtml html={a} inline /></span>
+                      ))}
                     </div>
                   )}
 
@@ -312,10 +314,14 @@ export function QuestionBankManager() {
                   )}
 
                   {/* Open ended model answer */}
-                  {q.type === 'open_ended' && q.correct_answer && (
+                  {q.type === 'open_ended' && Boolean(q.correct_answer) && (
                     <div className="mt-2 rounded-lg border border-green-200 bg-green-50 px-3 py-2 text-sm text-green-700">
                       <span className="font-medium">Respuesta modelo: </span>
-                      {typeof q.correct_answer === 'string' ? q.correct_answer : JSON.stringify(q.correct_answer)}
+                      {Array.isArray(q.correct_answer)
+                        ? (q.correct_answer as string[]).map((a, i) => (
+                            <span key={i}>{i > 0 && <span className="mx-1">·</span>}<SafeHtml html={a} inline /></span>
+                          ))
+                        : <SafeHtml html={q.correct_answer as string} inline />}
                     </div>
                   )}
 

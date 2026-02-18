@@ -147,7 +147,13 @@ export interface GenerateQuestionsParams {
 export async function generateQuestionsFromMaterial(
   params: GenerateQuestionsParams
 ): Promise<GeneratedQuestion[]> {
-  const { materialContent, questionCount, questionTypes, difficulty } = params
+  const { questionCount, questionTypes, difficulty } = params
+
+  // Truncate material to ~30K chars to avoid exceeding Groq token limits
+  const MAX_MATERIAL_LENGTH = 30000
+  const materialContent = params.materialContent.length > MAX_MATERIAL_LENGTH
+    ? params.materialContent.slice(0, MAX_MATERIAL_LENGTH) + '\n\n[... material truncado por longitud ...]'
+    : params.materialContent
 
   const difficultyLabels = {
     easy: 'fácil (conceptos básicos, definiciones simples)',

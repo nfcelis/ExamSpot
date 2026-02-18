@@ -4,7 +4,6 @@ import { PageLayout } from '../components/layout/PageLayout'
 import { Card } from '../components/common/Card'
 import { Button } from '../components/common/Button'
 import { LoadingSpinner } from '../components/common/LoadingSpinner'
-import { getPracticeConfig } from '../services/adminService'
 import { getCategoryList } from '../services/questionBankService'
 import { supabase } from '../lib/supabase'
 import type { PracticeConfig } from '../types/exam'
@@ -12,45 +11,46 @@ import toast from 'react-hot-toast'
 
 export function PracticePage() {
   const navigate = useNavigate()
-  const [config, setConfig] = useState<PracticeConfig | null>(null)
   const [categories, setCategories] = useState<string[]>([])
   const [selectedCategories, setSelectedCategories] = useState<Set<string>>(new Set())
   const [loading, setLoading] = useState(true)
   const [generating, setGenerating] = useState(false)
+  const [config, setConfig] = useState<PracticeConfig | null>(null)
 
   useEffect(() => {
-    async function load() {
+    async function loadData() {
       try {
-        const [configData, cats] = await Promise.all([
-          getPracticeConfig(),
+        const [cats, configResult] = await Promise.all([
           getCategoryList(),
+          supabase.from('practice_config').select('*').single(),
         ])
-        setConfig(configData)
         setCategories(cats)
+        if (configResult.data) {
+          setConfig(configResult.data as PracticeConfig)
+        }
       } catch (err) {
-        console.error('Error loading practice config:', err)
+        console.error('Error loading practice data:', err)
         toast.error('Error al cargar configuración de práctica')
       } finally {
         setLoading(false)
       }
     }
-    load()
+    loadData()
   }, [])
 
   const toggleCategory = (cat: string) => {
     setSelectedCategories(prev => {
       const next = new Set(prev)
-      if (next.has(cat)) {
-        next.delete(cat)
-      } else {
-        next.add(cat)
-      }
+      if (next.has(cat)) next.delete(cat)
+      else next.add(cat)
       return next
     })
   }
 
+  const numQuestions = config?.questions_per_practice ?? 10
+  const timeLimit = config?.time_limit_minutes ?? null
+
   const handleStartPractice = async () => {
-    if (!config) return
     setGenerating(true)
 
     try {
@@ -58,70 +58,20 @@ export function PracticePage() {
         ? Array.from(selectedCategories)
         : null
 
-      // Get random questions using the RPC function
-      const { data: questions, error } = await supabase
-        .rpc('get_random_questions_for_practice', {
-          num_questions: config.questions_per_practice,
-          categories: categoriesParam,
-        })
+      const { data, error } = await supabase.rpc('start_practice_session', {
+        p_num_questions: numQuestions,
+        p_categories: categoriesParam,
+        p_time_limit: timeLimit,
+      })
 
       if (error) throw error
-      if (!questions || questions.length === 0) {
-        toast.error('No hay suficientes preguntas disponibles')
-        return
-      }
 
-      // Create a practice exam
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) throw new Error('No autenticado')
-
-      const { data: exam, error: examError } = await supabase
-        .from('exams')
-        .insert({
-          title: `Práctica - ${new Date().toLocaleDateString('es')}`,
-          description: `Práctica: ${questions.length} preguntas aleatorias`,
-          created_by: user.id,
-          status: 'published',
-          is_public: false,
-          randomize_order: true,
-          time_limit: config.time_limit_minutes,
-          question_count: questions.length,
-        })
-        .select()
-        .single()
-
-      if (examError) throw examError
-
-      // Add questions to exam via exam_questions
-      const examQuestions = questions.map((q: { id: string }, index: number) => ({
-        exam_id: exam.id,
-        question_bank_id: q.id,
-        order_index: index,
-      }))
-
-      const { error: eqError } = await supabase
-        .from('exam_questions')
-        .insert(examQuestions)
-
-      if (eqError) throw eqError
-
-      // Create attempt
-      const { error: attemptError } = await supabase
-        .from('exam_attempts')
-        .insert({
-          exam_id: exam.id,
-          user_id: user.id,
-          is_practice: true,
-          max_score: questions.reduce((sum: number, q: { points: number }) => sum + q.points, 0),
-        })
-        .select()
-        .single()
-
-      if (attemptError) throw attemptError
-
-      navigate(`/exams/${exam.id}`)
+      const result = data as { exam_id: string; question_count: number }
+      toast.success(`Práctica iniciada con ${result.question_count} preguntas`)
+      navigate(`/exams/${result.exam_id}`)
     } catch (err) {
-      toast.error('Error al iniciar práctica')
+      const message = err instanceof Error ? err.message : 'Error desconocido'
+      toast.error(`Error al iniciar práctica: ${message}`)
       console.error(err)
     } finally {
       setGenerating(false)
@@ -148,37 +98,22 @@ export function PracticePage() {
           </p>
         </div>
 
-        {/* Practice Config Info */}
-        {config && (
-          <Card className="mb-6 border-2 border-primary-200 bg-primary-50/30">
-            <div className="grid gap-4 sm:grid-cols-3 text-center">
-              <div>
-                <p className="text-2xl font-bold text-primary-600">{config.questions_per_practice}</p>
-                <p className="text-sm text-secondary-500">preguntas</p>
-              </div>
-              <div>
-                <p className="text-2xl font-bold text-primary-600">
-                  {config.time_limit_minutes ? `${config.time_limit_minutes} min` : 'Sin límite'}
-                </p>
-                <p className="text-sm text-secondary-500">tiempo</p>
-              </div>
-              <div>
-                <p className="text-sm text-secondary-500">Distribución</p>
-                <div className="mt-1 flex justify-center gap-2">
-                  <span className="rounded bg-green-100 px-2 py-0.5 text-xs font-medium text-green-700">
-                    {config.difficulty_distribution.easy}% Fácil
-                  </span>
-                  <span className="rounded bg-yellow-100 px-2 py-0.5 text-xs font-medium text-yellow-700">
-                    {config.difficulty_distribution.medium}% Medio
-                  </span>
-                  <span className="rounded bg-red-100 px-2 py-0.5 text-xs font-medium text-red-700">
-                    {config.difficulty_distribution.hard}% Difícil
-                  </span>
-                </div>
-              </div>
+        {/* Practice info */}
+        <Card className="mb-6">
+          <h3 className="mb-3 font-semibold text-secondary-900">Detalles de la práctica</h3>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="rounded-lg bg-secondary-50 px-4 py-3">
+              <p className="text-sm text-secondary-500">Preguntas</p>
+              <p className="text-xl font-bold text-secondary-900">{numQuestions}</p>
             </div>
-          </Card>
-        )}
+            <div className="rounded-lg bg-secondary-50 px-4 py-3">
+              <p className="text-sm text-secondary-500">Tiempo límite</p>
+              <p className="text-xl font-bold text-secondary-900">
+                {timeLimit ? `${timeLimit} minutos` : 'Sin límite'}
+              </p>
+            </div>
+          </div>
+        </Card>
 
         {/* Category Selection */}
         <Card className="mb-6">
@@ -228,7 +163,7 @@ export function PracticePage() {
         >
           {generating
             ? 'Preparando práctica...'
-            : `Comenzar Práctica (${config?.questions_per_practice || 10} preguntas)`
+            : `Comenzar Práctica (${numQuestions} preguntas)`
           }
         </Button>
       </div>

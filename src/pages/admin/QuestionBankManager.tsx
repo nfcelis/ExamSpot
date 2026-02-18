@@ -1,10 +1,11 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { PageLayout } from '../../components/layout/PageLayout'
 import { Card } from '../../components/common/Card'
 import { Button } from '../../components/common/Button'
 import { Modal } from '../../components/common/Modal'
 import { LoadingSpinner } from '../../components/common/LoadingSpinner'
 import { ConfirmDialog } from '../../components/common/ConfirmDialog'
+import { SafeHtml } from '../../components/common/SafeHtml'
 import { QuestionEditor } from '../../components/admin/QuestionEditor'
 import { QuestionFilters } from '../../components/admin/QuestionFilters'
 import {
@@ -12,8 +13,11 @@ import {
   createQuestionManual,
   updateQuestion,
   deleteQuestion,
+  generateFeedbackForQuestion,
+  updateQuestionFeedback,
   type CreateQuestionData,
 } from '../../services/adminService'
+import { importQuestionsFromJSON, parseQuestionsJSON, getSectionsFromJSON, type ImportResult } from '../../services/importService'
 import type { QuestionBankItem } from '../../types/question'
 import toast from 'react-hot-toast'
 
@@ -44,6 +48,55 @@ export function QuestionBankManager() {
   const [editingQuestion, setEditingQuestion] = useState<QuestionBankItem | null>(null)
   const [deleteId, setDeleteId] = useState<string | null>(null)
   const [deleting, setDeleting] = useState(false)
+  const [expandedFeedback, setExpandedFeedback] = useState<Set<string>>(new Set())
+  const [editingFeedback, setEditingFeedback] = useState<Record<string, string>>({})
+  const [generatingFeedback, setGeneratingFeedback] = useState<Record<string, boolean>>({})
+  const [importing, setImporting] = useState(false)
+  const fileInputRef = useRef<HTMLInputElement>(null)
+
+  const toggleFeedback = (id: string) => {
+    setExpandedFeedback(prev => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  }
+
+  const handleGenerateFeedback = async (q: QuestionBankItem) => {
+    setGeneratingFeedback(prev => ({ ...prev, [q.id]: true }))
+    try {
+      const feedback = await generateFeedbackForQuestion(q.id)
+      setEditingFeedback(prev => ({ ...prev, [q.id]: feedback }))
+      if (!expandedFeedback.has(q.id)) {
+        setExpandedFeedback(prev => new Set(prev).add(q.id))
+      }
+      toast.success('Feedback generado')
+    } catch (err) {
+      toast.error('Error al generar feedback')
+      console.error(err)
+    } finally {
+      setGeneratingFeedback(prev => ({ ...prev, [q.id]: false }))
+    }
+  }
+
+  const handleSaveFeedback = async (questionId: string) => {
+    const feedback = editingFeedback[questionId]
+    if (feedback === undefined) return
+    try {
+      const updated = await updateQuestionFeedback(questionId, feedback)
+      setQuestions(prev => prev.map(q => q.id === questionId ? { ...q, explanation: updated.explanation } : q))
+      setEditingFeedback(prev => {
+        const next = { ...prev }
+        delete next[questionId]
+        return next
+      })
+      toast.success('Feedback guardado')
+    } catch (err) {
+      toast.error('Error al guardar')
+      console.error(err)
+    }
+  }
 
   const loadQuestions = async () => {
     setLoading(true)
@@ -103,6 +156,36 @@ export function QuestionBankManager() {
     }
   }
 
+  const handleImportJSON = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    e.target.value = '' // reset input
+
+    setImporting(true)
+    try {
+      const text = await file.text()
+      const parsed = parseQuestionsJSON(text)
+      const sections = getSectionsFromJSON(parsed)
+      toast.success(`Archivo cargado: ${parsed.length} preguntas en ${sections.length} secciones. Importando...`)
+
+      const result: ImportResult = await importQuestionsFromJSON(parsed)
+      toast.success(
+        `Importación completa: ${result.imported} importadas, ${result.duplicates} duplicadas, ${result.skipped} omitidas`
+      )
+      if (result.errors.length > 0) {
+        console.warn('Import errors:', result.errors)
+        toast.error(`${result.errors.length} errores durante la importación`)
+      }
+      loadQuestions()
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Error desconocido'
+      toast.error(`Error al importar: ${msg}`)
+      console.error(err)
+    } finally {
+      setImporting(false)
+    }
+  }
+
   return (
     <PageLayout>
       <div className="mb-6 flex items-center justify-between">
@@ -112,9 +195,25 @@ export function QuestionBankManager() {
             {questions.length} pregunta{questions.length !== 1 ? 's' : ''} en total
           </p>
         </div>
-        <Button onClick={() => setShowEditor(true)}>
-          Crear Pregunta
-        </Button>
+        <div className="flex gap-2">
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".json"
+            onChange={handleImportJSON}
+            className="hidden"
+          />
+          <Button
+            variant="secondary"
+            onClick={() => fileInputRef.current?.click()}
+            loading={importing}
+          >
+            {importing ? 'Importando...' : 'Importar JSON'}
+          </Button>
+          <Button onClick={() => setShowEditor(true)}>
+            Crear Pregunta
+          </Button>
+        </div>
       </div>
 
       <QuestionFilters
@@ -155,8 +254,77 @@ export function QuestionBankManager() {
                         IA
                       </span>
                     )}
+                    <span className="text-xs text-secondary-400">{q.points} pts</span>
                   </div>
-                  <p className="text-sm text-secondary-800 line-clamp-2">{q.question_text}</p>
+
+                  {/* Question text */}
+                  <div className="text-sm text-secondary-800">
+                    <SafeHtml html={q.question_text} />
+                  </div>
+
+                  {/* Options with correct answer highlighted */}
+                  {q.type === 'multiple_choice' && q.options && (
+                    <div className="mt-3 space-y-1.5">
+                      {q.options.map((opt, i) => {
+                        const isCorrect = typeof q.correct_answer === 'number'
+                          ? q.correct_answer === i
+                          : Array.isArray(q.correct_answer) && (q.correct_answer as number[]).includes(i)
+                        return (
+                          <div
+                            key={i}
+                            className={`rounded-lg border px-3 py-2 text-sm ${
+                              isCorrect
+                                ? 'border-green-300 bg-green-50 text-green-800'
+                                : 'border-secondary-200 text-secondary-600'
+                            }`}
+                          >
+                            <span className="mr-2 font-medium">{isCorrect ? '✓' : ' '}</span>
+                            <SafeHtml html={opt} inline />
+                          </div>
+                        )
+                      })}
+                    </div>
+                  )}
+
+                  {/* Fill blank correct answers */}
+                  {q.type === 'fill_blank' && Array.isArray(q.correct_answer) && (
+                    <div className="mt-2 rounded-lg border border-green-200 bg-green-50 px-3 py-2 text-sm text-green-700">
+                      <span className="font-medium">Respuestas: </span>
+                      {(q.correct_answer as string[]).join(', ')}
+                    </div>
+                  )}
+
+                  {/* Matching terms */}
+                  {q.type === 'matching' && q.terms && (
+                    <div className="mt-3 space-y-1.5">
+                      {q.terms.map((pair, i) => (
+                        <div key={i} className="flex items-center gap-2 text-sm">
+                          <span className="rounded bg-secondary-100 px-2 py-1 text-secondary-700">
+                            <SafeHtml html={pair.term} inline />
+                          </span>
+                          <span className="text-secondary-400">→</span>
+                          <span className="text-green-700">
+                            <SafeHtml html={pair.definition} inline />
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Open ended model answer */}
+                  {q.type === 'open_ended' && q.correct_answer && (
+                    <div className="mt-2 rounded-lg border border-green-200 bg-green-50 px-3 py-2 text-sm text-green-700">
+                      <span className="font-medium">Respuesta modelo: </span>
+                      {typeof q.correct_answer === 'string' ? q.correct_answer : JSON.stringify(q.correct_answer)}
+                    </div>
+                  )}
+
+                  {q.status === 'rejected' && q.rejection_reason && (
+                    <div className="mt-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2">
+                      <p className="text-xs font-medium text-red-700">Razón de rechazo:</p>
+                      <p className="mt-0.5 text-sm text-red-600">{q.rejection_reason}</p>
+                    </div>
+                  )}
                   {q.tags && q.tags.length > 0 && (
                     <div className="mt-2 flex flex-wrap gap-1">
                       {q.tags.map((tag) => (
@@ -168,6 +336,13 @@ export function QuestionBankManager() {
                   )}
                 </div>
                 <div className="flex shrink-0 gap-2">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => toggleFeedback(q.id)}
+                  >
+                    {expandedFeedback.has(q.id) ? 'Ocultar Feedback' : 'Feedback'}
+                  </Button>
                   <Button
                     variant="ghost"
                     size="sm"
@@ -184,6 +359,46 @@ export function QuestionBankManager() {
                   </Button>
                 </div>
               </div>
+
+              {/* Expandable Feedback Section */}
+              {expandedFeedback.has(q.id) && (
+                <div className="mt-3 rounded-lg border border-blue-200 bg-blue-50/50 p-3">
+                  <div className="mb-2 flex items-center justify-between">
+                    <p className="text-xs font-semibold text-blue-700">Feedback / Explicación</p>
+                    <div className="flex gap-1.5">
+                      <button
+                        onClick={() => handleGenerateFeedback(q)}
+                        disabled={generatingFeedback[q.id]}
+                        className="rounded bg-blue-100 px-2 py-0.5 text-xs font-medium text-blue-700 hover:bg-blue-200 disabled:opacity-50"
+                      >
+                        {generatingFeedback[q.id] ? 'Generando...' : q.explanation ? 'Regenerar con IA' : 'Generar con IA'}
+                      </button>
+                      {editingFeedback[q.id] !== undefined && editingFeedback[q.id] !== q.explanation && (
+                        <button
+                          onClick={() => handleSaveFeedback(q.id)}
+                          className="rounded bg-green-100 px-2 py-0.5 text-xs font-medium text-green-700 hover:bg-green-200"
+                        >
+                          Guardar
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                  {generatingFeedback[q.id] ? (
+                    <div className="flex items-center gap-2 py-2">
+                      <LoadingSpinner size="sm" className="text-blue-600" />
+                      <span className="text-sm text-blue-600">Generando feedback con IA...</span>
+                    </div>
+                  ) : (
+                    <textarea
+                      value={editingFeedback[q.id] !== undefined ? editingFeedback[q.id] : (q.explanation || '')}
+                      onChange={(e) => setEditingFeedback(prev => ({ ...prev, [q.id]: e.target.value }))}
+                      rows={4}
+                      className="w-full rounded border border-blue-200 bg-white px-3 py-2 text-sm text-blue-900 focus:border-blue-400 focus:outline-none focus:ring-1 focus:ring-blue-400"
+                      placeholder="Sin feedback. Genera uno con IA o escríbelo manualmente..."
+                    />
+                  )}
+                </div>
+              )}
             </Card>
           ))}
         </div>

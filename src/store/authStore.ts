@@ -55,10 +55,13 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
       const currentUser = get().user
 
       if (session?.user) {
-        set({ user: session.user })
-        // Only refetch profile if user changed
+        // If user changed, show loading while fetching profile
         if (currentUser?.id !== session.user.id) {
+          set({ user: session.user, loading: true })
           await get().fetchProfile(session.user.id)
+          set({ loading: false })
+        } else {
+          set({ user: session.user })
         }
       } else {
         set({ user: null, profile: null })

@@ -5,6 +5,7 @@ import { Card } from '../common/Card'
 import { Modal } from '../common/Modal'
 import { LoadingSpinner } from '../common/LoadingSpinner'
 import { QuestionDisplay } from './QuestionDisplay'
+import { SafeHtml } from '../common/SafeHtml'
 import { ExamTimer } from './ExamTimer'
 import { useSaveAnswer, useSubmitExam } from '../../hooks/useAttempts'
 import type { Exam, ExamAttempt } from '../../types/exam'
@@ -157,7 +158,7 @@ export function ExamTaker({ exam, attempt, questions }: ExamTakerProps) {
       {currentQuestion && (
         <Card>
           <div className="mb-4 flex items-start justify-between">
-            <p className="font-medium text-secondary-900">{currentQuestion.question_text}</p>
+            <SafeHtml html={currentQuestion.question_text} className="font-medium text-secondary-900" />
             <span className="ml-2 shrink-0 text-xs text-secondary-400">
               {currentQuestion.points} pts
             </span>

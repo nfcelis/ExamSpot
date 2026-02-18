@@ -398,20 +398,25 @@ BEGIN
 END;
 $$;
 
--- RPC: Create a practice exam with random questions from a section
-CREATE OR REPLACE FUNCTION public.create_practice_exam(
-  p_category TEXT,
-  p_num_questions INTEGER
+-- RPC: Start a full practice session (exam + questions + attempt)
+-- Supports optional category filtering and time limit
+CREATE OR REPLACE FUNCTION public.start_practice_session(
+  p_num_questions INTEGER,
+  p_categories TEXT[] DEFAULT NULL,
+  p_time_limit INTEGER DEFAULT NULL
 )
-RETURNS UUID
+RETURNS JSON
 LANGUAGE plpgsql
 SECURITY DEFINER
 SET search_path = public
 AS $$
 DECLARE
   v_exam_id UUID;
+  v_attempt_id UUID;
   v_user_id UUID;
   v_actual_count INTEGER;
+  v_max_score NUMERIC;
+  v_title TEXT;
 BEGIN
   v_user_id := auth.uid();
   IF v_user_id IS NULL THEN
@@ -422,19 +427,27 @@ BEGIN
     RAISE EXCEPTION 'Number of questions must be between 1 and 100';
   END IF;
 
-  -- Create the practice exam owned by the student
-  INSERT INTO exams (title, description, created_by, status, is_public, randomize_order)
+  -- Build title
+  IF p_categories IS NOT NULL AND array_length(p_categories, 1) = 1 THEN
+    v_title := 'Práctica: ' || p_categories[1];
+  ELSE
+    v_title := 'Práctica - ' || to_char(NOW(), 'DD/MM/YYYY HH24:MI');
+  END IF;
+
+  -- Create practice exam
+  INSERT INTO exams (title, description, created_by, status, is_public, randomize_order, time_limit)
   VALUES (
-    'Práctica: ' || p_category,
+    v_title,
     'Examen de práctica - ' || p_num_questions || ' preguntas aleatorias',
     v_user_id,
     'practice',
     false,
-    true
+    true,
+    p_time_limit
   )
   RETURNING id INTO v_exam_id;
 
-  -- Copy random questions from question_bank
+  -- Copy random approved questions from question_bank into legacy questions table
   INSERT INTO questions (exam_id, type, question_text, options, correct_answer, terms, points, explanation, order_index)
   SELECT
     v_exam_id,
@@ -447,20 +460,35 @@ BEGIN
     qb.explanation,
     (ROW_NUMBER() OVER (ORDER BY random()))::INTEGER - 1
   FROM question_bank qb
-  WHERE qb.category = p_category
+  WHERE qb.status = 'approved'
+    AND (p_categories IS NULL OR qb.category = ANY(p_categories))
   ORDER BY random()
   LIMIT p_num_questions;
 
   GET DIAGNOSTICS v_actual_count = ROW_COUNT;
 
+  IF v_actual_count = 0 THEN
+    DELETE FROM exams WHERE id = v_exam_id;
+    RAISE EXCEPTION 'No hay preguntas aprobadas disponibles para las categorías seleccionadas';
+  END IF;
+
   -- Update question count
   UPDATE exams SET question_count = v_actual_count WHERE id = v_exam_id;
 
-  IF v_actual_count = 0 THEN
-    DELETE FROM exams WHERE id = v_exam_id;
-    RAISE EXCEPTION 'No questions found for category: %', p_category;
-  END IF;
+  -- Calculate max score
+  SELECT COALESCE(SUM(points), 0) INTO v_max_score
+  FROM questions WHERE exam_id = v_exam_id;
 
-  RETURN v_exam_id;
+  -- Create attempt
+  INSERT INTO exam_attempts (exam_id, user_id, max_score, is_practice)
+  VALUES (v_exam_id, v_user_id, v_max_score, true)
+  RETURNING id INTO v_attempt_id;
+
+  RETURN json_build_object(
+    'exam_id', v_exam_id,
+    'attempt_id', v_attempt_id,
+    'question_count', v_actual_count,
+    'max_score', v_max_score
+  );
 END;
 $$;

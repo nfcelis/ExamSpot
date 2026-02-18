@@ -10,6 +10,8 @@ import {
   approveQuestion,
   rejectQuestion,
   modifyAndApproveQuestion,
+  generateFeedbackForQuestion,
+  updateQuestionFeedback,
 } from '../../services/adminService'
 import type { QuestionBankItem } from '../../types/question'
 import toast from 'react-hot-toast'
@@ -27,8 +29,14 @@ export function PendingQuestionsReview() {
   const [selectedQuestion, setSelectedQuestion] = useState<QuestionBankItem | null>(null)
   const [showRejectModal, setShowRejectModal] = useState(false)
   const [showEditModal, setShowEditModal] = useState(false)
+  const [showFeedbackModal, setShowFeedbackModal] = useState(false)
   const [rejectReason, setRejectReason] = useState('')
   const [processing, setProcessing] = useState(false)
+
+  // Feedback editing state
+  const [editingFeedback, setEditingFeedback] = useState<Record<string, string>>({})
+  const [generatingFeedback, setGeneratingFeedback] = useState<Record<string, boolean>>({})
+  const [feedbackInstructions, setFeedbackInstructions] = useState('')
 
   const loadPending = async () => {
     setLoading(true)
@@ -48,11 +56,28 @@ export function PendingQuestionsReview() {
   }, [])
 
   const handleApprove = async (question: QuestionBankItem) => {
+    // If there's edited feedback, save it first
+    const editedFeedback = editingFeedback[question.id]
+    if (editedFeedback !== undefined && editedFeedback !== question.explanation) {
+      try {
+        await updateQuestionFeedback(question.id, editedFeedback)
+      } catch (err) {
+        toast.error('Error al guardar feedback')
+        console.error(err)
+        return
+      }
+    }
+
     setProcessing(true)
     try {
       await approveQuestion(question.id)
       toast.success('Pregunta aprobada')
       setQuestions(prev => prev.filter(q => q.id !== question.id))
+      setEditingFeedback(prev => {
+        const next = { ...prev }
+        delete next[question.id]
+        return next
+      })
     } catch (err) {
       toast.error('Error al aprobar')
       console.error(err)
@@ -96,6 +121,48 @@ export function PendingQuestionsReview() {
     }
   }
 
+  const handleGenerateFeedback = async (questionId: string, instructions?: string) => {
+    setGeneratingFeedback(prev => ({ ...prev, [questionId]: true }))
+    try {
+      const feedback = await generateFeedbackForQuestion(questionId, instructions)
+      setEditingFeedback(prev => ({ ...prev, [questionId]: feedback }))
+      toast.success('Feedback generado por IA')
+    } catch (err) {
+      toast.error('Error al generar feedback con IA')
+      console.error(err)
+    } finally {
+      setGeneratingFeedback(prev => ({ ...prev, [questionId]: false }))
+    }
+  }
+
+  const handleSaveFeedback = async (questionId: string) => {
+    const feedback = editingFeedback[questionId]
+    if (feedback === undefined) return
+    setProcessing(true)
+    try {
+      const updated = await updateQuestionFeedback(questionId, feedback)
+      setQuestions(prev => prev.map(q => q.id === questionId ? { ...q, explanation: updated.explanation } : q))
+      toast.success('Feedback guardado')
+    } catch (err) {
+      toast.error('Error al guardar feedback')
+      console.error(err)
+    } finally {
+      setProcessing(false)
+    }
+  }
+
+  const handleGenerateWithInstructions = async () => {
+    if (!selectedQuestion) return
+    await handleGenerateFeedback(selectedQuestion.id, feedbackInstructions || undefined)
+    setShowFeedbackModal(false)
+    setFeedbackInstructions('')
+    setSelectedQuestion(null)
+  }
+
+  const getCurrentFeedback = (q: QuestionBankItem) => {
+    return editingFeedback[q.id] !== undefined ? editingFeedback[q.id] : (q.explanation || '')
+  }
+
   const renderQuestionPreview = (q: QuestionBankItem) => (
     <div className="space-y-3">
       <p className="text-sm font-medium text-secondary-800">{q.question_text}</p>
@@ -111,7 +178,7 @@ export function PendingQuestionsReview() {
                   : 'bg-secondary-50 text-secondary-600'
               }`}
             >
-              {idx === (q.correct_answer as number) && '✓ '}
+              {idx === (q.correct_answer as number) && '\u2713 '}
               {opt}
             </div>
           ))}
@@ -140,15 +207,66 @@ export function PendingQuestionsReview() {
           ))}
         </div>
       )}
-
-      {q.explanation && (
-        <div className="rounded-lg bg-blue-50 p-3">
-          <p className="text-xs font-medium text-blue-700">Explicación:</p>
-          <p className="mt-1 text-sm text-blue-800">{q.explanation}</p>
-        </div>
-      )}
     </div>
   )
+
+  const renderFeedbackSection = (q: QuestionBankItem) => {
+    const feedback = getCurrentFeedback(q)
+    const isGenerating = generatingFeedback[q.id]
+    const isEdited = editingFeedback[q.id] !== undefined && editingFeedback[q.id] !== q.explanation
+
+    return (
+      <div className="mt-3 rounded-lg border border-blue-200 bg-blue-50/50 p-3">
+        <div className="mb-2 flex items-center justify-between">
+          <p className="text-xs font-semibold text-blue-700">
+            Feedback / Explicación
+            {isEdited && <span className="ml-2 text-yellow-600">(modificado, sin guardar)</span>}
+          </p>
+          <div className="flex gap-1.5">
+            <button
+              onClick={() => handleGenerateFeedback(q.id)}
+              disabled={isGenerating}
+              className="rounded bg-blue-100 px-2 py-0.5 text-xs font-medium text-blue-700 hover:bg-blue-200 disabled:opacity-50"
+            >
+              {isGenerating ? 'Generando...' : feedback ? 'Regenerar con IA' : 'Generar con IA'}
+            </button>
+            <button
+              onClick={() => {
+                setSelectedQuestion(q)
+                setShowFeedbackModal(true)
+              }}
+              disabled={isGenerating}
+              className="rounded bg-purple-100 px-2 py-0.5 text-xs font-medium text-purple-700 hover:bg-purple-200 disabled:opacity-50"
+            >
+              IA con instrucciones
+            </button>
+            {isEdited && (
+              <button
+                onClick={() => handleSaveFeedback(q.id)}
+                className="rounded bg-green-100 px-2 py-0.5 text-xs font-medium text-green-700 hover:bg-green-200"
+              >
+                Guardar
+              </button>
+            )}
+          </div>
+        </div>
+        {isGenerating ? (
+          <div className="flex items-center gap-2 py-2">
+            <LoadingSpinner size="sm" className="text-blue-600" />
+            <span className="text-sm text-blue-600">Generando feedback con IA...</span>
+          </div>
+        ) : (
+          <textarea
+            value={feedback}
+            onChange={(e) => setEditingFeedback(prev => ({ ...prev, [q.id]: e.target.value }))}
+            rows={feedback ? Math.min(6, Math.max(3, feedback.split('\n').length + 1)) : 3}
+            className="w-full rounded border border-blue-200 bg-white px-3 py-2 text-sm text-blue-900 focus:border-blue-400 focus:outline-none focus:ring-1 focus:ring-blue-400"
+            placeholder="Sin feedback. Genera uno con IA o escríbelo manualmente..."
+          />
+        )}
+      </div>
+    )
+  }
 
   return (
     <PageLayout>
@@ -156,7 +274,7 @@ export function PendingQuestionsReview() {
         <div className="mb-8">
           <h1 className="text-2xl font-bold text-secondary-900">Preguntas Pendientes</h1>
           <p className="mt-1 text-secondary-500">
-            Revisa y aprueba/rechaza las preguntas generadas por IA.
+            Revisa preguntas, gestiona el feedback y aprueba/rechaza.
             {questions.length > 0 && ` ${questions.length} pendiente${questions.length !== 1 ? 's' : ''}.`}
           </p>
         </div>
@@ -198,6 +316,7 @@ export function PendingQuestionsReview() {
                 </div>
 
                 {renderQuestionPreview(q)}
+                {renderFeedbackSection(q)}
 
                 {/* Actions */}
                 <div className="mt-4 flex gap-2 border-t border-secondary-100 pt-4">
@@ -291,6 +410,50 @@ export function PendingQuestionsReview() {
               }}
             />
           )}
+        </Modal>
+
+        {/* Generate Feedback with Instructions Modal */}
+        <Modal
+          isOpen={showFeedbackModal}
+          onClose={() => {
+            setShowFeedbackModal(false)
+            setSelectedQuestion(null)
+            setFeedbackInstructions('')
+          }}
+          title="Generar Feedback con Instrucciones"
+        >
+          <div className="space-y-4">
+            <p className="text-sm text-secondary-600">
+              Indica instrucciones para la IA sobre cómo debe generar o mejorar el feedback.
+            </p>
+            {selectedQuestion && (
+              <div className="rounded-lg bg-secondary-50 p-3">
+                <p className="text-xs font-medium text-secondary-500">Pregunta:</p>
+                <p className="mt-1 text-sm text-secondary-800">{selectedQuestion.question_text}</p>
+              </div>
+            )}
+            <textarea
+              value={feedbackInstructions}
+              onChange={(e) => setFeedbackInstructions(e.target.value)}
+              rows={4}
+              className="w-full rounded-lg border border-secondary-300 px-3 py-2 text-sm shadow-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
+              placeholder="ej: Incluye un ejemplo práctico, explica la diferencia entre las opciones A y C, hazlo más breve..."
+            />
+            <div className="flex justify-end gap-3">
+              <Button variant="secondary" onClick={() => {
+                setShowFeedbackModal(false)
+                setFeedbackInstructions('')
+              }}>
+                Cancelar
+              </Button>
+              <Button
+                onClick={handleGenerateWithInstructions}
+                loading={selectedQuestion ? generatingFeedback[selectedQuestion.id] : false}
+              >
+                Generar Feedback
+              </Button>
+            </div>
+          </div>
         </Modal>
       </div>
     </PageLayout>

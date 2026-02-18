@@ -1,4 +1,5 @@
 import { Card } from '../common/Card'
+import { SafeHtml } from '../common/SafeHtml'
 import type { Question } from '../../types/question'
 
 interface QuestionPreviewProps {
@@ -25,12 +26,12 @@ export function QuestionPreview({ question, index, showAnswer = false, compact =
           </span>
           <span className="text-xs text-secondary-400">{question.points || 10} pts</span>
         </div>
-        <p className="text-sm text-secondary-800">{question.question_text}</p>
+        <SafeHtml html={question.question_text} className="text-sm text-secondary-800" />
         {question.type === 'multiple_choice' && question.options && (
           <div className="flex flex-wrap gap-1">
             {question.options.map((opt, i) => (
               <span key={i} className="rounded bg-secondary-50 px-2 py-0.5 text-xs text-secondary-600">
-                {opt}
+                <SafeHtml html={opt} inline />
               </span>
             ))}
           </div>
@@ -53,7 +54,7 @@ export function QuestionPreview({ question, index, showAnswer = false, compact =
         <span className="text-xs font-medium text-secondary-500">{question.points || 10} pts</span>
       </div>
 
-      <p className="font-medium text-secondary-900">{question.question_text}</p>
+      <SafeHtml html={question.question_text} className="font-medium text-secondary-900" />
 
       {/* Multiple Choice Options */}
       {question.type === 'multiple_choice' && question.options && (
@@ -73,7 +74,7 @@ export function QuestionPreview({ question, index, showAnswer = false, compact =
                     : 'border-secondary-200 text-secondary-700'
                 }`}
               >
-                {option}
+                <SafeHtml html={option} inline />
               </div>
             )
           })}
@@ -104,11 +105,11 @@ export function QuestionPreview({ question, index, showAnswer = false, compact =
           {question.terms.map((pair, i) => (
             <div key={i} className="flex items-center gap-2 text-sm">
               <span className="rounded bg-secondary-100 px-2 py-1 text-secondary-700">
-                {pair.term}
+                <SafeHtml html={pair.term} inline />
               </span>
               <span className="text-secondary-400">→</span>
               <span className={showAnswer ? 'text-green-700' : 'text-secondary-500'}>
-                {showAnswer ? pair.definition : '???'}
+                {showAnswer ? <SafeHtml html={pair.definition} inline /> : '???'}
               </span>
             </div>
           ))}

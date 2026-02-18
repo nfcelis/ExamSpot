@@ -34,22 +34,24 @@ const queryClient = new QueryClient({
 })
 
 function AppRoutes() {
-  const { initialized, user } = useAuthStore()
+  const { initialized, user, profile, loading } = useAuthStore()
 
-  if (!initialized) {
+  if (!initialized || loading) {
     return <FullPageSpinner />
   }
+
+  const homeRoute = profile?.role === 'admin' ? '/admin' : '/dashboard'
 
   return (
     <Routes>
       <Route
         path="/"
         element={
-          <Navigate to={user ? '/dashboard' : '/login'} replace />
+          <Navigate to={user ? homeRoute : '/login'} replace />
         }
       />
-      <Route path="/login" element={user ? <Navigate to="/dashboard" replace /> : <LoginPage />} />
-      <Route path="/register" element={user ? <Navigate to="/dashboard" replace /> : <RegisterPage />} />
+      <Route path="/login" element={user ? <Navigate to={homeRoute} replace /> : <LoginPage />} />
+      <Route path="/register" element={user ? <Navigate to={homeRoute} replace /> : <RegisterPage />} />
       <Route
         path="/dashboard"
         element={

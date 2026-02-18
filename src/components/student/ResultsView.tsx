@@ -1,4 +1,5 @@
 import { Card } from '../common/Card'
+import { SafeHtml } from '../common/SafeHtml'
 import type { ExamAttempt, ExamAnswer } from '../../types/exam'
 import type { Question } from '../../types/question'
 
@@ -70,7 +71,7 @@ export function ResultsView({ attempt, answers, questions }: ResultsViewProps) {
                 </span>
               </div>
 
-              <p className="font-medium text-secondary-900">{question.question_text}</p>
+              <SafeHtml html={question.question_text} className="font-medium text-secondary-900" />
 
               {/* User answer */}
               <div className="rounded-lg border border-secondary-200 bg-secondary-50 p-3 text-sm">
@@ -178,7 +179,13 @@ function renderAnswer(question: Question, answer: unknown): string {
   switch (question.type) {
     case 'multiple_choice':
       if (typeof answer === 'number' && question.options) {
-        return question.options[answer] || 'Sin respuesta'
+        return question.options[answer]?.replace(/<[^>]+>/g, '') || 'Sin respuesta'
+      }
+      if (Array.isArray(answer) && question.options) {
+        return (answer as number[])
+          .map((i) => question.options![i]?.replace(/<[^>]+>/g, '') || '')
+          .filter(Boolean)
+          .join(', ') || 'Sin respuesta'
       }
       return String(answer)
     case 'open_ended':
@@ -202,11 +209,12 @@ function renderCorrectAnswer(question: Question): string {
   switch (question.type) {
     case 'multiple_choice':
       if (typeof question.correct_answer === 'number' && question.options) {
-        return question.options[question.correct_answer] || ''
+        return question.options[question.correct_answer]?.replace(/<[^>]+>/g, '') || ''
       }
       if (Array.isArray(question.correct_answer) && question.options) {
         return (question.correct_answer as number[])
-          .map((i) => question.options![i])
+          .map((i) => question.options![i]?.replace(/<[^>]+>/g, '') || '')
+          .filter(Boolean)
           .join(', ')
       }
       return ''

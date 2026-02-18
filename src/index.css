@@ -45,3 +45,27 @@
   --color-danger-800: #991b1b;
   --color-danger-900: #7f1d1d;
 }
+
+/* Question HTML content (images, formatting) */
+.question-html img {
+  max-width: 100%;
+  height: auto;
+  display: inline-block;
+  vertical-align: middle;
+  margin: 0.25rem 0;
+}
+
+.question-html p {
+  margin: 0;
+}
+
+.question-html table {
+  border-collapse: collapse;
+  margin: 0.5rem 0;
+}
+
+.question-html td,
+.question-html th {
+  border: 1px solid #e2e8f0;
+  padding: 0.25rem 0.5rem;
+}

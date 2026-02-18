@@ -249,6 +249,74 @@ export async function getUsageAnalytics() {
   return data
 }
 
+// ===== Generación/Mejora de Feedback con IA =====
+
+export async function generateFeedbackForQuestion(questionId: string, instructions?: string): Promise<string> {
+  const { callClaudeAI } = await import('./aiService')
+
+  const { data: question, error } = await supabase
+    .from('question_bank')
+    .select('*')
+    .eq('id', questionId)
+    .single()
+
+  if (error) throw error
+
+  const correctAnswerStr = typeof question.correct_answer === 'string'
+    ? question.correct_answer
+    : JSON.stringify(question.correct_answer)
+
+  const optionsStr = question.options
+    ? `\nOpciones: ${(question.options as string[]).join(', ')}`
+    : ''
+
+  const termsStr = question.terms
+    ? `\nPares: ${(question.terms as Array<{ term: string; definition: string }>).map((t) => `${t.term} = ${t.definition}`).join(', ')}`
+    : ''
+
+  const instructionsStr = instructions
+    ? `\n\nINSTRUCCIONES ADICIONALES DEL ADMIN:\n${instructions}`
+    : ''
+
+  const existingFeedback = question.explanation
+    ? `\n\nFeedback actual (mejorar o reescribir):\n${question.explanation}`
+    : ''
+
+  const prompt = `Genera un feedback/explicación educativa para la siguiente pregunta de examen.
+
+Pregunta: ${question.question_text}
+Tipo: ${question.type}${optionsStr}${termsStr}
+Respuesta correcta: ${correctAnswerStr}
+Categoría: ${question.category}
+Dificultad: ${question.difficulty}${existingFeedback}${instructionsStr}
+
+El feedback debe:
+1. Explicar POR QUÉ la respuesta correcta es correcta
+2. Si es opción múltiple, explicar por qué las otras opciones son incorrectas
+3. Dar contexto educativo que ayude al estudiante a entender el tema
+4. Ser conciso pero completo (2-4 párrafos)
+5. Estar en español
+
+Responde SOLAMENTE con el texto del feedback, sin formato JSON ni etiquetas.`
+
+  const system = 'Eres un experto en educación que crea feedback pedagógico de alta calidad. Siempre respondes en español.'
+
+  const feedback = await callClaudeAI(prompt, system, 1500)
+  return feedback.trim()
+}
+
+export async function updateQuestionFeedback(questionId: string, explanation: string): Promise<QuestionBankItem> {
+  const { data, error } = await supabase
+    .from('question_bank')
+    .update({ explanation, updated_at: new Date().toISOString() })
+    .eq('id', questionId)
+    .select()
+    .single()
+
+  if (error) throw error
+  return data as QuestionBankItem
+}
+
 // ===== Revisión de Feedback de IA =====
 
 export async function getPendingFeedbackReviews() {

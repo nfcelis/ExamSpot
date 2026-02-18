@@ -6,6 +6,7 @@ import { LoadingSpinner } from '../common/LoadingSpinner'
 import { QuestionPreview } from '../question/QuestionPreview'
 import { useQuestionBank, useCategories } from '../../hooks/useQuestionBank'
 import type { QuestionBankItem, QuestionType } from '../../types/question'
+import { QUESTION_TYPE_OPTIONS as TYPE_OPTIONS } from '../../lib/questionTypeConstants'
 import toast from 'react-hot-toast'
 
 interface QuestionBankBrowserProps {
@@ -13,14 +14,6 @@ interface QuestionBankBrowserProps {
   loading?: boolean
   excludeIds?: string[]
 }
-
-const TYPE_OPTIONS = [
-  { value: '', label: 'Todos los tipos' },
-  { value: 'multiple_choice', label: 'Opción múltiple' },
-  { value: 'open_ended', label: 'Respuesta abierta' },
-  { value: 'fill_blank', label: 'Rellenar espacios' },
-  { value: 'matching', label: 'Emparejar' },
-]
 
 const DIFFICULTY_OPTIONS = [
   { value: '', label: 'Todas las dificultades' },

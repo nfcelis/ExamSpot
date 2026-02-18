@@ -7,14 +7,7 @@ import { LoadingSpinner } from '../components/common/LoadingSpinner'
 import { QuestionPreview } from '../components/question/QuestionPreview'
 import { useQuestionBank, useCategories } from '../hooks/useQuestionBank'
 import type { QuestionType, QuestionBankItem } from '../types/question'
-
-const TYPE_OPTIONS = [
-  { value: '', label: 'Todos los tipos' },
-  { value: 'multiple_choice', label: 'Opción múltiple' },
-  { value: 'open_ended', label: 'Respuesta abierta' },
-  { value: 'fill_blank', label: 'Rellenar espacios' },
-  { value: 'matching', label: 'Emparejar' },
-]
+import { QUESTION_TYPE_OPTIONS as TYPE_OPTIONS } from '../lib/questionTypeConstants'
 
 const DIFFICULTY_OPTIONS = [
   { value: '', label: 'Todas las dificultades' },

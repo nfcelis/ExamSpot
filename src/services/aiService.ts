@@ -140,7 +140,7 @@ export interface GeneratedQuestion {
 export interface GenerateQuestionsParams {
   materialContent: string
   questionCount: number
-  questionTypes: Array<'multiple_choice' | 'open_ended' | 'fill_blank' | 'matching'>
+  questionTypes: Array<'multiple_choice' | 'true_false' | 'multi_select' | 'open_ended' | 'written_response' | 'fill_blank' | 'matching' | 'ordering'>
   difficulty: 'easy' | 'medium' | 'hard'
 }
 

@@ -20,14 +20,10 @@ import {
   removeQuestionFromExam,
 } from '../services/examService'
 import type { QuestionBankItem } from '../types/question'
+import { QUESTION_TYPE_LABELS } from '../lib/questionTypeConstants'
 import toast from 'react-hot-toast'
 
-const typeLabels: Record<string, string> = {
-  multiple_choice: 'Opción Múltiple',
-  open_ended: 'Respuesta Abierta',
-  fill_blank: 'Rellenar Espacios',
-  matching: 'Emparejar',
-}
+const typeLabels = QUESTION_TYPE_LABELS
 
 export function ExamEditPage() {
   const { id } = useParams<{ id: string }>()

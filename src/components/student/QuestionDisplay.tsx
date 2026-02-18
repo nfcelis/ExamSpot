@@ -9,22 +9,10 @@ interface QuestionDisplayProps {
   onChange: (answer: unknown) => void
 }
 
-function isMultiSelect(question: Question): boolean {
-  return Array.isArray(question.correct_answer)
-}
-
 export function QuestionDisplay({ question, answer, onChange }: QuestionDisplayProps) {
   switch (question.type) {
     case 'multiple_choice':
-      if (isMultiSelect(question)) {
-        return (
-          <MultiSelectDisplay
-            question={question}
-            answer={(answer as number[]) || []}
-            onChange={onChange}
-          />
-        )
-      }
+    case 'true_false':
       return (
         <MultipleChoiceDisplay
           question={question}
@@ -32,13 +20,25 @@ export function QuestionDisplay({ question, answer, onChange }: QuestionDisplayP
           onChange={onChange}
         />
       )
+
+    case 'multi_select':
+      return (
+        <MultiSelectDisplay
+          question={question}
+          answer={(answer as number[]) || []}
+          onChange={onChange}
+        />
+      )
+
     case 'open_ended':
+    case 'written_response':
       return (
         <OpenEndedDisplay
           answer={(answer as string) || ''}
           onChange={onChange}
         />
       )
+
     case 'fill_blank':
       return (
         <FillBlankDisplay
@@ -47,6 +47,7 @@ export function QuestionDisplay({ question, answer, onChange }: QuestionDisplayP
           onChange={onChange}
         />
       )
+
     case 'matching':
       return (
         <MatchingDisplay
@@ -55,6 +56,16 @@ export function QuestionDisplay({ question, answer, onChange }: QuestionDisplayP
           onChange={onChange}
         />
       )
+
+    case 'ordering':
+      return (
+        <OrderingDisplay
+          question={question}
+          answer={(answer as string[]) || []}
+          onChange={onChange}
+        />
+      )
+
     default:
       return <p className="text-secondary-500">Tipo de pregunta no soportado.</p>
   }
@@ -113,7 +124,7 @@ function MultiSelectDisplay({
 
   return (
     <div className="space-y-2">
-      <p className="text-xs text-secondary-400 italic">Selecciona todas las que apliquen</p>
+      <p className="text-xs italic text-secondary-400">Selecciona todas las que apliquen</p>
       {question.options?.map((option, i) => (
         <label
           key={i}
@@ -227,6 +238,64 @@ function MatchingDisplay({
               </option>
             ))}
           </select>
+        </div>
+      ))}
+    </div>
+  )
+}
+
+function OrderingDisplay({
+  question,
+  answer,
+  onChange,
+}: {
+  question: Question
+  answer: string[]
+  onChange: (v: unknown) => void
+}) {
+  // Initialize with shuffled options if no answer yet
+  const items = answer.length > 0 ? answer : (question.options || [])
+
+  const moveItem = (index: number, direction: -1 | 1) => {
+    const newItems = [...items]
+    const targetIndex = index + direction
+    if (targetIndex < 0 || targetIndex >= newItems.length) return
+    ;[newItems[index], newItems[targetIndex]] = [newItems[targetIndex], newItems[index]]
+    onChange(newItems)
+  }
+
+  return (
+    <div className="space-y-2">
+      <p className="text-xs italic text-secondary-400">Ordena los elementos en el orden correcto</p>
+      {items.map((item, i) => (
+        <div
+          key={i}
+          className="flex items-center gap-3 rounded-lg border border-secondary-200 bg-white px-4 py-3"
+        >
+          <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary-100 text-xs font-bold text-primary-700">
+            {i + 1}
+          </span>
+          <div className="flex-1 text-sm text-secondary-700">
+            <SafeHtml html={item} inline />
+          </div>
+          <div className="flex flex-col gap-0.5">
+            <button
+              type="button"
+              onClick={() => moveItem(i, -1)}
+              disabled={i === 0}
+              className="rounded p-1 text-secondary-400 hover:bg-secondary-100 hover:text-secondary-700 disabled:opacity-30"
+            >
+              ▲
+            </button>
+            <button
+              type="button"
+              onClick={() => moveItem(i, 1)}
+              disabled={i === items.length - 1}
+              className="rounded p-1 text-secondary-400 hover:bg-secondary-100 hover:text-secondary-700 disabled:opacity-30"
+            >
+              ▼
+            </button>
+          </div>
         </div>
       ))}
     </div>

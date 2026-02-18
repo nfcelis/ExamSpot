@@ -105,6 +105,27 @@ export function gradeMatching(question: Question, answer: unknown): GradeResult 
   return { isCorrect, score }
 }
 
+export function gradeOrdering(question: Question, answer: unknown): GradeResult {
+  const correctOrder = question.correct_answer as string[]
+  const userOrder = answer as string[]
+
+  if (!Array.isArray(correctOrder) || !Array.isArray(userOrder)) {
+    return { isCorrect: false, score: 0 }
+  }
+
+  let correctCount = 0
+  for (let i = 0; i < correctOrder.length; i++) {
+    if (userOrder[i] === correctOrder[i]) correctCount++
+  }
+
+  const isCorrect = correctCount === correctOrder.length
+  const score = correctOrder.length > 0
+    ? Math.round((correctCount / correctOrder.length) * question.points)
+    : 0
+
+  return { isCorrect, score }
+}
+
 export async function gradeExam(
   questions: Question[],
   answers: ExamAnswer[],
@@ -131,6 +152,10 @@ export async function gradeExam(
 
     switch (question.type) {
       case 'multiple_choice':
+      case 'true_false':
+        result = gradeMultipleChoice(question, examAnswer.user_answer)
+        break
+      case 'multi_select':
         result = gradeMultipleChoice(question, examAnswer.user_answer)
         break
       case 'fill_blank':
@@ -139,7 +164,11 @@ export async function gradeExam(
       case 'matching':
         result = gradeMatching(question, examAnswer.user_answer)
         break
-      case 'open_ended': {
+      case 'ordering':
+        result = gradeOrdering(question, examAnswer.user_answer)
+        break
+      case 'open_ended':
+      case 'written_response': {
         console.log('Grading open-ended question:', question.id)
         const aiResult = await gradeOpenEndedAnswer(
           question,

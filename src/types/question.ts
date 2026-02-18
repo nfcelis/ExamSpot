@@ -1,4 +1,12 @@
-export type QuestionType = 'multiple_choice' | 'open_ended' | 'fill_blank' | 'matching'
+export type QuestionType =
+  | 'multiple_choice'
+  | 'true_false'
+  | 'multi_select'
+  | 'open_ended'
+  | 'written_response'
+  | 'fill_blank'
+  | 'matching'
+  | 'ordering'
 export type QuestionStatus = 'pending' | 'approved' | 'rejected'
 export type QuestionSource = 'manual' | 'ai_generated' | 'imported'
 export type QuestionDifficulty = 'easy' | 'medium' | 'hard'

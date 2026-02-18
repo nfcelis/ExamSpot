@@ -12,6 +12,7 @@ import {
   type GenerateQuestionsParams,
 } from '../../services/aiService'
 import type { Material } from '../../types/exam'
+import { AI_QUESTION_TYPE_OPTIONS as QUESTION_TYPES } from '../../lib/questionTypeConstants'
 import toast from 'react-hot-toast'
 
 interface QuestionGeneratorProps {
@@ -19,13 +20,6 @@ interface QuestionGeneratorProps {
   onAddQuestions: (questions: GeneratedQuestion[]) => void
   loading?: boolean
 }
-
-const QUESTION_TYPES = [
-  { value: 'multiple_choice', label: 'Opción múltiple' },
-  { value: 'open_ended', label: 'Respuesta abierta' },
-  { value: 'fill_blank', label: 'Rellenar espacios' },
-  { value: 'matching', label: 'Emparejar' },
-] as const
 
 const DIFFICULTY_OPTIONS = [
   { value: 'easy', label: 'Fácil' },
@@ -40,7 +34,7 @@ export function QuestionGenerator({ examId, onAddQuestions, loading: externalLoa
   const [additionalContent, setAdditionalContent] = useState('')
   const [questionCount, setQuestionCount] = useState(5)
   const [difficulty, setDifficulty] = useState<'easy' | 'medium' | 'hard'>('medium')
-  const [selectedTypes, setSelectedTypes] = useState<Set<GenerateQuestionsParams['questionTypes'][number]>>(
+  const [selectedTypes, setSelectedTypes] = useState<Set<string>>(
     new Set(['multiple_choice', 'open_ended'])
   )
   const [generating, setGenerating] = useState(false)
@@ -76,7 +70,7 @@ export function QuestionGenerator({ examId, onAddQuestions, loading: externalLoa
     })
   }
 
-  const toggleType = (type: GenerateQuestionsParams['questionTypes'][number]) => {
+  const toggleType = (type: string) => {
     setSelectedTypes((prev) => {
       const next = new Set(prev)
       if (next.has(type)) {
@@ -141,7 +135,7 @@ export function QuestionGenerator({ examId, onAddQuestions, loading: externalLoa
       const questions = await generateQuestionsFromMaterial({
         materialContent: fullContent,
         questionCount,
-        questionTypes: Array.from(selectedTypes),
+        questionTypes: Array.from(selectedTypes) as GenerateQuestionsParams['questionTypes'],
         difficulty,
       })
 

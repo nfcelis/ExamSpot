@@ -3,6 +3,7 @@ import { Card } from '../common/Card'
 import { SafeHtml } from '../common/SafeHtml'
 import type { ExamAttempt, ExamAnswer } from '../../types/exam'
 import type { Question } from '../../types/question'
+import { QUESTION_TYPE_LABELS } from '../../lib/questionTypeConstants'
 
 interface ResultsViewProps {
   attempt: ExamAttempt
@@ -19,12 +20,7 @@ function getMotivationalMessage(percentage: number): string {
   return 'No te desanimes. Revisa el material y vuelve a intentarlo.'
 }
 
-const typeLabels: Record<string, string> = {
-  multiple_choice: 'Opción múltiple',
-  open_ended: 'Respuesta abierta',
-  fill_blank: 'Rellenar espacios',
-  matching: 'Emparejar',
-}
+const typeLabels = QUESTION_TYPE_LABELS
 
 export function ResultsView({ attempt, answers, questions, showCorrectAnswers = true, showFeedback = true }: ResultsViewProps) {
   return (
@@ -83,7 +79,7 @@ export function ResultsView({ attempt, answers, questions, showCorrectAnswers = 
               </div>
 
               {/* Correct answer */}
-              {showCorrectAnswers && examAnswer && !examAnswer.is_correct && question.type !== 'open_ended' && (
+              {showCorrectAnswers && examAnswer && !examAnswer.is_correct && question.type !== 'open_ended' && question.type !== 'written_response' && (
                 <div className="rounded-lg border border-green-200 bg-green-50 p-3 text-sm text-green-600">
                   <span className="font-medium text-green-700">Respuesta correcta: </span>
                   {renderCorrectAnswer(question)}
@@ -177,9 +173,12 @@ function renderAnswer(question: Question, answer: unknown): React.ReactNode {
 
   switch (question.type) {
     case 'multiple_choice':
+    case 'true_false':
       if (typeof answer === 'number' && question.options) {
         return <SafeHtml html={question.options[answer] ?? 'Sin respuesta'} inline />
       }
+      return String(answer)
+    case 'multi_select':
       if (Array.isArray(answer) && question.options) {
         return (answer as number[]).map((i, idx) => (
           <span key={idx}>{idx > 0 && ', '}<SafeHtml html={question.options![i] ?? ''} inline /></span>
@@ -187,6 +186,7 @@ function renderAnswer(question: Question, answer: unknown): React.ReactNode {
       }
       return String(answer)
     case 'open_ended':
+    case 'written_response':
       return <SafeHtml html={String(answer)} inline />
     case 'fill_blank':
       if (Array.isArray(answer)) {
@@ -202,6 +202,17 @@ function renderAnswer(question: Question, answer: unknown): React.ReactNode {
         ))
       }
       return String(answer)
+    case 'ordering':
+      if (Array.isArray(answer)) {
+        return (
+          <ol className="mt-1 list-inside list-decimal space-y-0.5">
+            {(answer as string[]).map((item, i) => (
+              <li key={i}><SafeHtml html={item} inline /></li>
+            ))}
+          </ol>
+        )
+      }
+      return String(answer)
     default:
       return String(answer)
   }
@@ -210,9 +221,12 @@ function renderAnswer(question: Question, answer: unknown): React.ReactNode {
 function renderCorrectAnswer(question: Question): React.ReactNode {
   switch (question.type) {
     case 'multiple_choice':
+    case 'true_false':
       if (typeof question.correct_answer === 'number' && question.options) {
         return <SafeHtml html={question.options[question.correct_answer] ?? ''} inline />
       }
+      return null
+    case 'multi_select':
       if (Array.isArray(question.correct_answer) && question.options) {
         return (question.correct_answer as number[]).map((i, idx) => (
           <span key={idx}>{idx > 0 && ', '}<SafeHtml html={question.options![i] ?? ''} inline /></span>
@@ -231,6 +245,17 @@ function renderCorrectAnswer(question: Question): React.ReactNode {
         return question.terms.map((t, i) => (
           <span key={i}>{i > 0 && '; '}<SafeHtml html={t.term} inline /> → <SafeHtml html={t.definition} inline /></span>
         ))
+      }
+      return null
+    case 'ordering':
+      if (Array.isArray(question.correct_answer)) {
+        return (
+          <ol className="mt-1 list-inside list-decimal space-y-0.5">
+            {(question.correct_answer as string[]).map((item, i) => (
+              <li key={i}><SafeHtml html={item} inline /></li>
+            ))}
+          </ol>
+        )
       }
       return null
     default:

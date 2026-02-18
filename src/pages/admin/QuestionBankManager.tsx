@@ -13,20 +13,17 @@ import {
   createQuestionManual,
   updateQuestion,
   deleteQuestion,
+  deleteAllMyQuestions,
   generateFeedbackForQuestion,
   updateQuestionFeedback,
   type CreateQuestionData,
 } from '../../services/adminService'
 import { importQuestionsFromJSON, parseQuestionsJSON, getSectionsFromJSON, type ImportResult } from '../../services/importService'
 import type { QuestionBankItem } from '../../types/question'
+import { QUESTION_TYPE_LABELS } from '../../lib/questionTypeConstants'
 import toast from 'react-hot-toast'
 
-const typeLabels: Record<string, string> = {
-  multiple_choice: 'Opción Múltiple',
-  open_ended: 'Respuesta Abierta',
-  fill_blank: 'Rellenar Espacios',
-  matching: 'Emparejar',
-}
+const typeLabels = QUESTION_TYPE_LABELS
 
 const difficultyLabels: Record<string, string> = {
   easy: 'Fácil',
@@ -48,6 +45,8 @@ export function QuestionBankManager() {
   const [editingQuestion, setEditingQuestion] = useState<QuestionBankItem | null>(null)
   const [deleteId, setDeleteId] = useState<string | null>(null)
   const [deleting, setDeleting] = useState(false)
+  const [showDeleteAll, setShowDeleteAll] = useState(false)
+  const [deletingAll, setDeletingAll] = useState(false)
   const [expandedFeedback, setExpandedFeedback] = useState<Set<string>>(new Set())
   const [editingFeedback, setEditingFeedback] = useState<Record<string, string>>({})
   const [generatingFeedback, setGeneratingFeedback] = useState<Record<string, boolean>>({})
@@ -156,6 +155,21 @@ export function QuestionBankManager() {
     }
   }
 
+  const handleDeleteAll = async () => {
+    setDeletingAll(true)
+    try {
+      const count = await deleteAllMyQuestions()
+      toast.success(`${count} preguntas eliminadas`)
+      setShowDeleteAll(false)
+      loadQuestions()
+    } catch (err) {
+      toast.error('Error al eliminar todas las preguntas')
+      console.error(err)
+    } finally {
+      setDeletingAll(false)
+    }
+  }
+
   const handleImportJSON = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
@@ -203,6 +217,14 @@ export function QuestionBankManager() {
             onChange={handleImportJSON}
             className="hidden"
           />
+          {questions.length > 0 && (
+            <Button
+              variant="danger"
+              onClick={() => setShowDeleteAll(true)}
+            >
+              Borrar Todo
+            </Button>
+          )}
           <Button
             variant="secondary"
             onClick={() => fileInputRef.current?.click()}
@@ -262,8 +284,8 @@ export function QuestionBankManager() {
                     <SafeHtml html={q.question_text} />
                   </div>
 
-                  {/* Options with correct answer highlighted */}
-                  {q.type === 'multiple_choice' && q.options && (
+                  {/* Options with correct answer highlighted (MC, T/F, Multi-Select) */}
+                  {(q.type === 'multiple_choice' || q.type === 'true_false' || q.type === 'multi_select') && q.options && (
                     <div className="mt-3 space-y-1.5">
                       {q.options.map((opt, i) => {
                         const isCorrect = typeof q.correct_answer === 'number'
@@ -313,15 +335,24 @@ export function QuestionBankManager() {
                     </div>
                   )}
 
-                  {/* Open ended model answer */}
-                  {q.type === 'open_ended' && Boolean(q.correct_answer) && (
+                  {/* Open ended / written response model answer */}
+                  {(q.type === 'open_ended' || q.type === 'written_response') && Boolean(q.correct_answer) && (
                     <div className="mt-2 rounded-lg border border-green-200 bg-green-50 px-3 py-2 text-sm text-green-700">
                       <span className="font-medium">Respuesta modelo: </span>
-                      {Array.isArray(q.correct_answer)
-                        ? (q.correct_answer as string[]).map((a, i) => (
-                            <span key={i}>{i > 0 && <span className="mx-1">·</span>}<SafeHtml html={a} inline /></span>
-                          ))
-                        : <SafeHtml html={q.correct_answer as string} inline />}
+                      <SafeHtml html={q.correct_answer as string} inline />
+                    </div>
+                  )}
+
+                  {/* Ordering correct sequence */}
+                  {q.type === 'ordering' && Array.isArray(q.correct_answer) && (
+                    <div className="mt-2 space-y-1">
+                      <p className="text-xs font-medium text-secondary-500">Orden correcto:</p>
+                      {(q.correct_answer as string[]).map((item, i) => (
+                        <div key={i} className="flex items-center gap-2 text-sm text-secondary-700">
+                          <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-green-100 text-xs font-bold text-green-700">{i + 1}</span>
+                          <SafeHtml html={item} inline />
+                        </div>
+                      ))}
                     </div>
                   )}
 
@@ -446,6 +477,15 @@ export function QuestionBankManager() {
         title="Eliminar pregunta"
         message="¿Estás seguro de que deseas eliminar esta pregunta? Esta acción no se puede deshacer."
         loading={deleting}
+      />
+
+      <ConfirmDialog
+        isOpen={showDeleteAll}
+        onClose={() => setShowDeleteAll(false)}
+        onConfirm={handleDeleteAll}
+        title="Borrar TODAS las preguntas"
+        message={`¿Estás seguro de que deseas eliminar las ${questions.length} preguntas del banco? Esta acción no se puede deshacer.`}
+        loading={deletingAll}
       />
     </PageLayout>
   )

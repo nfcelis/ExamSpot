@@ -11,6 +11,7 @@ interface CreateQuestionBankData {
   points?: number
   explanation?: string | null
   is_public?: boolean
+  status?: string
 }
 
 interface ImportedQuestion {
@@ -27,17 +28,19 @@ interface ImportedQuestion {
 function mapQuestionType(jsonType: string): QuestionType {
   switch (jsonType) {
     case 'Multiple Choice':
-    case 'Multi-Select':
-    case 'True/False':
       return 'multiple_choice'
+    case 'True/False':
+      return 'true_false'
+    case 'Multi-Select':
+      return 'multi_select'
     case 'Fill in the Blanks':
       return 'fill_blank'
     case 'Matching':
       return 'matching'
-    case 'Short Answer':
-      return 'open_ended'
     case 'Ordering':
-      return 'open_ended'
+      return 'ordering'
+    case 'Short Answer':
+      return 'written_response'
     default:
       return 'open_ended'
   }
@@ -45,7 +48,7 @@ function mapQuestionType(jsonType: string): QuestionType {
 
 function transformQuestion(q: ImportedQuestion): CreateQuestionBankData {
   const dbType = mapQuestionType(q.type)
-  const tags = [q.type] // Keep original type as tag
+  const tags = [q.type]
 
   switch (q.type) {
     case 'Multiple Choice': {
@@ -65,6 +68,23 @@ function transformQuestion(q: ImportedQuestion): CreateQuestionBankData {
       }
     }
 
+    case 'True/False': {
+      const options = ['Verdadero', 'Falso']
+      const correctAnswer = q.correct_answers?.[0]
+      // D2L returns "True" or "False" text values
+      const correctIndex = correctAnswer?.toLowerCase().startsWith('true') ? 0 : 1
+      return {
+        category: q.section,
+        tags,
+        type: dbType,
+        question_text: q.question,
+        options,
+        correct_answer: correctIndex,
+        points: 10,
+        is_public: false,
+      }
+    }
+
     case 'Multi-Select': {
       const options = q.options || []
       const correctIndices = (q.correct_answers || [])
@@ -77,22 +97,6 @@ function transformQuestion(q: ImportedQuestion): CreateQuestionBankData {
         question_text: q.question,
         options,
         correct_answer: correctIndices,
-        points: 10,
-        is_public: false,
-      }
-    }
-
-    case 'True/False': {
-      const options = ['Verdadero', 'Falso']
-      const correctAnswer = q.correct_answers?.[0]
-      const correctIndex = correctAnswer === 'True' ? 0 : 1
-      return {
-        category: q.section,
-        tags,
-        type: dbType,
-        question_text: q.question,
-        options,
-        correct_answer: correctIndex,
         points: 10,
         is_public: false,
       }
@@ -129,6 +133,22 @@ function transformQuestion(q: ImportedQuestion): CreateQuestionBankData {
       }
     }
 
+    case 'Ordering': {
+      // options = items to order (will be shuffled for display)
+      // correct_answer = items in correct order
+      const items = q.ordered_items || []
+      return {
+        category: q.section,
+        tags,
+        type: dbType,
+        question_text: q.question,
+        options: items,
+        correct_answer: items,
+        points: 10,
+        is_public: false,
+      }
+    }
+
     case 'Short Answer': {
       return {
         category: q.section,
@@ -137,20 +157,6 @@ function transformQuestion(q: ImportedQuestion): CreateQuestionBankData {
         question_text: q.question,
         options: null,
         correct_answer: q.correct_answers?.[0] || '',
-        points: 10,
-        is_public: false,
-      }
-    }
-
-    case 'Ordering': {
-      // Store as open_ended with the correct order as the answer
-      return {
-        category: q.section,
-        tags,
-        type: dbType,
-        question_text: q.question,
-        options: null,
-        correct_answer: q.ordered_items || [],
         points: 10,
         is_public: false,
       }
@@ -215,9 +221,13 @@ export async function importQuestionsFromJSON(
       result.duplicates++
       continue
     }
-    existingTexts.add(key) // prevent duplicates within the file too
+    existingTexts.add(key)
     toImport.push({
-      row: { ...transformQuestion(q), created_by: user.id },
+      row: {
+        ...transformQuestion(q),
+        created_by: user.id,
+        status: 'approved', // Imported questions are auto-approved
+      },
       originalId: q.id,
     })
   }

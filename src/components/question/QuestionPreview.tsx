@@ -1,6 +1,7 @@
 import { Card } from '../common/Card'
 import { SafeHtml } from '../common/SafeHtml'
 import type { Question } from '../../types/question'
+import { QUESTION_TYPE_LABELS } from '../../lib/questionTypeConstants'
 
 interface QuestionPreviewProps {
   question: Partial<Question> & { type: string; question_text: string }
@@ -9,12 +10,7 @@ interface QuestionPreviewProps {
   compact?: boolean
 }
 
-const typeLabels: Record<string, string> = {
-  multiple_choice: 'Opción múltiple',
-  open_ended: 'Respuesta abierta',
-  fill_blank: 'Rellenar espacios',
-  matching: 'Emparejar',
-}
+const typeLabels = QUESTION_TYPE_LABELS
 
 export function QuestionPreview({ question, index, showAnswer = false, compact = false }: QuestionPreviewProps) {
   if (compact) {
@@ -27,7 +23,7 @@ export function QuestionPreview({ question, index, showAnswer = false, compact =
           <span className="text-xs text-secondary-400">{question.points || 10} pts</span>
         </div>
         <SafeHtml html={question.question_text} className="text-sm text-secondary-800" />
-        {question.type === 'multiple_choice' && question.options && (
+        {(question.type === 'multiple_choice' || question.type === 'true_false' || question.type === 'multi_select') && question.options && (
           <div className="flex flex-wrap gap-1">
             {question.options.map((opt, i) => (
               <span key={i} className="rounded bg-secondary-50 px-2 py-0.5 text-xs text-secondary-600">
@@ -56,8 +52,8 @@ export function QuestionPreview({ question, index, showAnswer = false, compact =
 
       <SafeHtml html={question.question_text} className="font-medium text-secondary-900" />
 
-      {/* Multiple Choice Options */}
-      {question.type === 'multiple_choice' && question.options && (
+      {/* Multiple Choice / True-False / Multi-Select Options */}
+      {(question.type === 'multiple_choice' || question.type === 'true_false' || question.type === 'multi_select') && question.options && (
         <div className="space-y-1.5">
           {question.options.map((option, i) => {
             const isCorrect = showAnswer && (
@@ -74,6 +70,9 @@ export function QuestionPreview({ question, index, showAnswer = false, compact =
                     : 'border-secondary-200 text-secondary-700'
                 }`}
               >
+                {question.type === 'multi_select' && showAnswer && (
+                  <span className="mr-2 font-bold">{isCorrect ? '☑' : '☐'}</span>
+                )}
                 <SafeHtml html={option} inline />
               </div>
             )
@@ -81,15 +80,11 @@ export function QuestionPreview({ question, index, showAnswer = false, compact =
         </div>
       )}
 
-      {/* Open Ended Model Answer */}
-      {question.type === 'open_ended' && showAnswer && (
+      {/* Open Ended / Written Response Model Answer */}
+      {(question.type === 'open_ended' || question.type === 'written_response') && showAnswer && (
         <div className="rounded-lg border border-green-300 bg-green-50 p-3 text-sm text-green-800">
           <span className="font-medium">Respuesta modelo: </span>
-          {Array.isArray(question.correct_answer)
-            ? (question.correct_answer as string[]).map((a, i) => (
-                <span key={i}>{i > 0 && <span className="mx-1">·</span>}<SafeHtml html={a} inline /></span>
-              ))
-            : <SafeHtml html={question.correct_answer as string} inline />}
+          <SafeHtml html={question.correct_answer as string} inline />
         </div>
       )}
 
@@ -115,6 +110,18 @@ export function QuestionPreview({ question, index, showAnswer = false, compact =
               <span className={showAnswer ? 'text-green-700' : 'text-secondary-500'}>
                 {showAnswer ? <SafeHtml html={pair.definition} inline /> : '???'}
               </span>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Ordering */}
+      {question.type === 'ordering' && question.options && (
+        <div className="space-y-1.5">
+          {(showAnswer ? question.correct_answer as string[] : question.options).map((item, i) => (
+            <div key={i} className={`flex items-center gap-2 rounded-lg border px-3 py-2 text-sm ${showAnswer ? 'border-green-300 bg-green-50 text-green-800' : 'border-secondary-200 text-secondary-700'}`}>
+              <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-green-100 text-xs font-bold text-green-700">{i + 1}</span>
+              <SafeHtml html={item} inline />
             </div>
           ))}
         </div>

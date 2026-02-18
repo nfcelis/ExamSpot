@@ -14,14 +14,10 @@ import {
   updateQuestionFeedback,
 } from '../../services/adminService'
 import type { QuestionBankItem } from '../../types/question'
+import { QUESTION_TYPE_LABELS } from '../../lib/questionTypeConstants'
 import toast from 'react-hot-toast'
 
-const typeLabels: Record<string, string> = {
-  multiple_choice: 'Opción Múltiple',
-  open_ended: 'Respuesta Abierta',
-  fill_blank: 'Rellenar Espacios',
-  matching: 'Emparejar',
-}
+const typeLabels = QUESTION_TYPE_LABELS
 
 export function PendingQuestionsReview() {
   const [questions, setQuestions] = useState<QuestionBankItem[]>([])

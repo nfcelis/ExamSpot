@@ -245,13 +245,60 @@ def parse_multiple_choice(item, flow):
 
 
 def parse_multi_select(item, flow):
-    """Parse a Multi-Select question (same structure as MC but multiple correct)."""
-    result = parse_multiple_choice(item, flow)
-    if result:
-        # For multi-select, there might be multiple correct answers
-        # The resprocessing uses grading_type to determine scoring
-        pass
-    return result
+    """Parse a Multi-Select question (multiple correct answers required).
+
+    D2L structure: the positive-score respcondition has a conditionvar with
+    direct <varequal> children = options that MUST be selected (correct).
+    Options inside <not><varequal> must NOT be selected (incorrect, ignored here).
+    """
+    material = flow.find('material/mattext')
+    question_text = get_text_from_mattext(material)
+
+    response_lid = flow.find('.//response_lid')
+    if response_lid is None:
+        return None
+
+    options = []
+    option_idents = []
+    for flow_label in response_lid.findall('.//flow_label'):
+        resp_label = flow_label.find('response_label')
+        if resp_label is not None:
+            ident = resp_label.get('ident')
+            mattext = resp_label.find('.//mattext')
+            option_text = get_text_from_mattext(mattext)
+            options.append(option_text)
+            option_idents.append(ident)
+
+    # Find the respcondition with a positive score
+    correct_answers = []
+    for respcondition in item.findall('.//resprocessing/respcondition'):
+        setvar = respcondition.find('setvar')
+        if setvar is None:
+            continue
+        try:
+            score = float(setvar.text)
+        except (ValueError, TypeError):
+            score = 0
+        if score <= 0:
+            continue
+
+        # Found the positive-scoring condition
+        # Direct <varequal> children of <conditionvar> = must select (correct)
+        # <varequal> inside <not> = must NOT select (skip)
+        conditionvar = respcondition.find('conditionvar')
+        if conditionvar is not None:
+            for varequal in conditionvar.findall('varequal'):
+                ident = varequal.text
+                if ident and ident in option_idents:
+                    idx = option_idents.index(ident)
+                    correct_answers.append(options[idx])
+        break  # Only process first positive-scoring condition
+
+    return {
+        "question": question_text,
+        "options": options,
+        "correct_answers": correct_answers,
+    }
 
 
 def parse_true_false(item, flow):

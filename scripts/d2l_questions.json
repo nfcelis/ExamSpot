@@ -169,7 +169,10 @@
       "<p>Un modelo conceptual no puede tener más de 20 conceptos</p>"
     ],
     "correct_answers": [
-      "<p>Un modelo conceptual sirve para definir el vocabulario (glosario de términos) que se usa en un proyecto</p>"
+      "<p>Un modelo conceptual sirve para definir el vocabulario (glosario de términos) que se usa en un proyecto</p>",
+      "<p>Un modelo conceptual se puede expresar mediante un metamodelo</p>",
+      "<p>El término modelo conceptual es sinónimo del término modelo ontológico</p>",
+      "<p>Es posible construir un modelo conceptual para cualquier dominio de conocimiento</p>"
     ]
   },
   {
@@ -470,7 +473,9 @@
       "<p>Que no corresponda a una de las dimensiones de la arquitectura empresarial</p>"
     ],
     "correct_answers": [
-      "<p>Obtener información inadecuada o falsa de la realidad.</p>"
+      "<p>Obtener información inadecuada o falsa de la realidad.</p>",
+      "<p>Realizar un proceso de abstracción incorrecto.</p>",
+      "<p>Elaborar artefactos ambiguos.</p>"
     ]
   },
   {
@@ -737,7 +742,9 @@
       "<p>El modelo estratégico</p>"
     ],
     "correct_answers": [
-      "<p>El portafolio de servicios</p>"
+      "<p>El portafolio de servicios</p>",
+      "<p>El modelo ontológico</p>",
+      "<p>La estructura del negocio</p>"
     ]
   },
   {
@@ -753,7 +760,9 @@
       "<p>El modelo organizacional</p>"
     ],
     "correct_answers": [
-      "<p>El modelo de negocio</p>"
+      "<p>El modelo de negocio</p>",
+      "<p>El modelo financiero</p>",
+      "<p>El modelo estratégico</p>"
     ]
   },
   {
@@ -787,7 +796,11 @@
       "<p>Servicio</p>"
     ],
     "correct_answers": [
-      "<p>Producto físico</p>"
+      "<p>Producto físico</p>",
+      "<p>Producto digital</p>",
+      "<p>Bien físico durable</p>",
+      "<p>Resultado</p>",
+      "<p>Servicio</p>"
     ]
   },
   {
@@ -829,7 +842,9 @@
       "<p>Desecho</p>"
     ],
     "correct_answers": [
-      "<p>Relacionamiento</p>"
+      "<p>Relacionamiento</p>",
+      "<p>Aprovisionamiento</p>",
+      "<p>Distribución</p>"
     ]
   },
   {
@@ -919,7 +934,9 @@
       "<p>Los términos \"modelo de negocio\" y \"escenario de negocio\" son sinónimos</p>"
     ],
     "correct_answers": [
-      "<p>Un escenario de negocio es un diagrama que ilustra la manera como funciona un aspecto importante de un negocio</p>"
+      "<p>Un escenario de negocio es un diagrama que ilustra la manera como funciona un aspecto importante de un negocio</p>",
+      "<div>El objetivo de un escenario de negocio es contar una historia, mostrando el orden en el que suceden las cosas</div>",
+      "<div>Un escenario de negocio es un diagrama dinámico, que utiliza como base la estructura del negocio y en el que se dibuja la línea de tiempo de los sucesos que se quieren ilustrar</div>"
     ]
   },
   {
@@ -980,7 +997,9 @@
       "<p>Un modelo de negocio solo puede tener un tipo de cliente</p>"
     ],
     "correct_answers": [
-      "<p>El objeto del negocio describe el valor que entrega el negocio a sus clientes</p>"
+      "<p>El objeto del negocio describe el valor que entrega el negocio a sus clientes</p>",
+      "<p>El cliente es quien recibe el valor de parte del negocio, e intercambia ese valor por dinero</p>",
+      "<p>Dos clientes son de distinto tipo si se relacionan con el negocio a través de servicios diferentes</p>"
     ]
   },
   {
@@ -996,7 +1015,9 @@
       "<p>Los servicios de negocio que implementa</p>"
     ],
     "correct_answers": [
-      "<p>Un nombre</p>"
+      "<p>Un nombre</p>",
+      "<p>Un tipo</p>",
+      "<p>Las actividades que se desarrollan en su interior</p>"
     ]
   },
   {
@@ -1223,7 +1244,8 @@
       "<p>La estructura del negocio nunca puede tener más de 10 componentes</p>"
     ],
     "correct_answers": [
-      "<p>Un componente es un depósito de valor, información y/dinero</p>"
+      "<p>Un componente es un depósito de valor, información y/dinero</p>",
+      "<p>La estructura del negocio debe tener al menos un componente</p>"
     ]
   },
   {
@@ -1319,7 +1341,8 @@
       "<p>Enseñanza para niños</p>"
     ],
     "correct_answers": [
-      "<p>Vender zapatos usando un portal WEB</p>"
+      "<p>Vender zapatos usando un portal WEB</p>",
+      "<p>Enseñanza para niños</p>"
     ]
   },
   {
@@ -1380,7 +1403,8 @@
       "<p>Empleados</p>"
     ],
     "correct_answers": [
-      "<p>Clientes</p>"
+      "<p>Clientes</p>",
+      "<p>Usuarios</p>"
     ]
   },
   {
@@ -1469,7 +1493,8 @@
       "<p>Para hacer el análisis financiero del modelo de negocio.</p>"
     ],
     "correct_answers": [
-      "<p>Para mostrar el orden en que suceden las actividades de una estructura del negocio.</p>"
+      "<p>Para mostrar el orden en que suceden las actividades de una estructura del negocio.</p>",
+      "<p>Para mostrar cómo funciona un aspecto importante de un negocio.</p>"
     ]
   },
   {
@@ -1696,7 +1721,9 @@
       "<p>Nuevas capacidades de negocio</p>"
     ],
     "correct_answers": [
-      "<p>Nuevos componentes</p>"
+      "<p>Nuevos componentes</p>",
+      "<p>Nuevos canales</p>",
+      "<p>Nuevas actividades</p>"
     ]
   },
   {
@@ -1811,7 +1838,9 @@
       "<p>Valor presente neto</p>"
     ],
     "correct_answers": [
-      "<p>Modelo de ingresos y egresos</p>"
+      "<p>Modelo de ingresos y egresos</p>",
+      "<p>Balance proyectado</p>",
+      "<p>Flujo de caja proyectado</p>"
     ]
   },
   {
@@ -1890,7 +1919,9 @@
       "<p>Proyecciones de crecimiento de la empresa</p>"
     ],
     "correct_answers": [
-      "<p>Estado de pérdidas y ganancias (P&G)</p>"
+      "<p>Estado de pérdidas y ganancias (P&G)</p>",
+      "<p>Balance actual y balances históricos</p>",
+      "<p>Estado de la caja</p>"
     ]
   },
   {
@@ -2049,7 +2080,10 @@
       "<p>Intereses de deuda</p>"
     ],
     "correct_answers": [
-      "<p>Cuentas corrientes</p>"
+      "<p>Cuentas corrientes</p>",
+      "<p>Cuentas de ahorros</p>",
+      "<p>Cuentas por cobrar</p>",
+      "<p>Inventarios</p>"
     ]
   },
   {
@@ -2114,7 +2148,8 @@
       "<p>Ingresos a futuro</p>"
     ],
     "correct_answers": [
-      "<p>Ingresos operacionales</p>"
+      "<p>Ingresos operacionales</p>",
+      "<p>Ingresos no operacionales</p>"
     ]
   },
   {
@@ -2316,7 +2351,9 @@
       "<p>La utilidad operacional de la empresa es de $70</p>"
     ],
     "correct_answers": [
-      "<p>El %EBITDA de la empresa es del 45%</p>"
+      "<p>El %EBITDA de la empresa es del 45%</p>",
+      "<p>El margen bruto de la empresa es de $70</p>",
+      "<p>La utilidad operacional de la empresa es de $45</p>"
     ]
   },
   {
@@ -2414,7 +2451,10 @@
       "<p>Si una empresa ejecuta el plan contenido en el modelo estratégico, es seguro que va a alcanzar la situación objetivo</p>"
     ],
     "correct_answers": [
-      "<p>Una estrategia es un grupo estructurado y coordinado de acciones estratégicas, organizadas en una línea de tiempo</p>"
+      "<p>Una estrategia es un grupo estructurado y coordinado de acciones estratégicas, organizadas en una línea de tiempo</p>",
+      "<p>Cada una de las acciones estratégicas de un plan tiene  la intención de aportar parcialmente en el logro del estado objetivo, moviendo uno o varios de los indicadores</p>",
+      "<p>La planeación estratégica es el proceso que siguen las empresas para construir su estrategia</p>",
+      "<p>Un modelo estratégico es el conjunto de artefactos que especifican una estrategia</p>"
     ]
   },
   {
@@ -2440,7 +2480,9 @@
       "<p>Definición del responsable de ejecutarla y de los plazos para llevarla a cabo</p>"
     ],
     "correct_answers": [
-      "<div>Proporcionalidad entre el tamaño de la acción (en extensión e intensidad) y el tamaño del resultado</div>"
+      "<div>Proporcionalidad entre el tamaño de la acción (en extensión e intensidad) y el tamaño del resultado</div>",
+      "<div>Sostenibilidad del resultado cuando se deja de ejecutar la</div>\n<div>acción</div>",
+      "<div>Probabilidad (nivel de certeza) de obtener el resultado si se</div>\n<div>ejecuta la acción</div>"
     ]
   },
   {
@@ -2469,7 +2511,9 @@
       "<p>Integración vertical hacia adelante y hacia atrás</p>"
     ],
     "correct_answers": [
-      "<div>Mejorar la implementación actual del modelo de negocio</div>"
+      "<div>Mejorar la implementación actual del modelo de negocio</div>",
+      "<div>Competir </div>",
+      "<p>Transformar el negocio</p>"
     ]
   },
   {
@@ -2528,7 +2572,8 @@
       "<p>Diagrama de Gantt</p>"
     ],
     "correct_answers": [
-      "<p>Objetivos estratégicos</p>"
+      "<p>Objetivos estratégicos</p>",
+      "<p>Diagrama de Gantt</p>"
     ]
   },
   {
@@ -2861,7 +2906,9 @@
       "<p>Tasa de cambio del dólar</p>"
     ],
     "correct_answers": [
-      "<p>Ventas al año</p>"
+      "<p>Ventas al año</p>",
+      "<p>Número de clientes nuevos</p>",
+      "<p>Número de quejas de los clientes</p>"
     ]
   },
   {
@@ -2877,7 +2924,8 @@
       "<p>Reacción de los competidores frente a la acción</p>"
     ],
     "correct_answers": [
-      "<p>Extensión de la acción</p>"
+      "<p>Extensión de la acción</p>",
+      "<p>Intensidad de la acción</p>"
     ]
   },
   {
@@ -2953,7 +3001,9 @@
       "<p>Hay una relación uno a uno entre procesos de negocio y capacidades de negocio</p>"
     ],
     "correct_answers": [
-      "<p>Las capacidades son independientes entre sí</p>"
+      "<p>Las capacidades son independientes entre sí</p>",
+      "<p>Las capacidades son estables en el tiempo</p>",
+      "<p>Las capacidades se expresan desde el punto de vista de la empresa</p>"
     ]
   },
   {
@@ -3030,7 +3080,9 @@
       "<p>Servicios de negocio</p>"
     ],
     "correct_answers": [
-      "<p>Empleados (del modelo organizacional)</p>"
+      "<p>Empleados (del modelo organizacional)</p>",
+      "<p>Procedimientos (del modelo de procesos)</p>",
+      "<p>Recursos</p>"
     ]
   },
   {
@@ -3059,7 +3111,8 @@
       "<p>Una misma capacidad puede aparecer en más de un punto del mapa de capacidades</p>"
     ],
     "correct_answers": [
-      "<p>Un mapa de capacidades debe tener 300 capacidades y 10 paquetes</p>"
+      "<p>Un mapa de capacidades debe tener 300 capacidades y 10 paquetes</p>",
+      "<p>Una misma capacidad puede aparecer en más de un punto del mapa de capacidades</p>"
     ]
   },
   {
@@ -3075,7 +3128,9 @@
       "<p>En el primer nivel de un mapa de capacidades siempre hay 10 paquetes</p>"
     ],
     "correct_answers": [
-      "<div>Las capacidades deben ser disyuntas, en el sentido de que no debe existir ninguna que sea parte de otra (que esté incluida) o que dos capacidades representen acciones con actividades en común (la intersección debe ser vacía)</div>"
+      "<div>Las capacidades deben ser disyuntas, en el sentido de que no debe existir ninguna que sea parte de otra (que esté incluida) o que dos capacidades representen acciones con actividades en común (la intersección debe ser vacía)</div>",
+      "<div>Las capacidades que se encuentran en un mismo paquete deben tener entre ellas un alto nivel de cohesión</div>",
+      "<p>El número de niveles de un mapa de capacidades puede variar</p>"
     ]
   },
   {
@@ -3136,7 +3191,9 @@
       "<p>El modelo estratégico</p>"
     ],
     "correct_answers": [
-      "<p>El modelo organizacional</p>"
+      "<p>El modelo organizacional</p>",
+      "<p>El modelo de procesos</p>",
+      "<p>El modelo de recursos</p>"
     ]
   },
   {
@@ -3408,7 +3465,9 @@
       "<p>De distribución</p>"
     ],
     "correct_answers": [
-      "<p>Misional</p>"
+      "<p>Misional</p>",
+      "<p>De funcionamiento</p>",
+      "<p>Estratégica</p>"
     ]
   },
   {
@@ -3440,7 +3499,8 @@
       "<p>Hacer el aseo de la tienda</p>"
     ],
     "correct_answers": [
-      "<p>Atender alegre y eficazmente a los clientes</p>"
+      "<p>Atender alegre y eficazmente a los clientes</p>",
+      "<p>Crear el cliente en el CRM</p>"
     ]
   },
   {
@@ -3488,7 +3548,9 @@
       "<p>Contratar un empleado nuevo</p>"
     ],
     "correct_answers": [
-      "<p>Tener personal altamente capacitado</p>"
+      "<p>Tener personal altamente capacitado</p>",
+      "<p>Tener un enfoque ágil e innovador</p>",
+      "<p>Gestionar el clima organizacional</p>"
     ]
   },
   {
@@ -3638,7 +3700,8 @@
       "<p>Una capacidad es equivalente a un servicio interno de la empresa</p>"
     ],
     "correct_answers": [
-      "<p>Una capacidad es una acción, no un objetivo</p>"
+      "<p>Una capacidad es una acción, no un objetivo</p>",
+      "<p>Una capacidad es neutra con respecto a su logro</p>"
     ]
   },
   {
@@ -3654,7 +3717,9 @@
       "<p>Las capacidades son independientes entre sí</p>"
     ],
     "correct_answers": [
-      "<p>Una capacidad se expresa desde el punto de vista del cliente</p>"
+      "<p>Una capacidad se expresa desde el punto de vista del cliente</p>",
+      "<p>Una capacidad debe hacer referencia a la tecnología que la soporta</p>",
+      "<p>Una capacidad siempre se debe expresar en singular</p>"
     ]
   },
   {
@@ -3670,7 +3735,9 @@
       "<p>El modelo estratégico</p>"
     ],
     "correct_answers": [
-      "<p>El modelo organizacional</p>"
+      "<p>El modelo organizacional</p>",
+      "<p>El modelo de procesos</p>",
+      "<p>El modelo de recursos</p>"
     ]
   },
   {
@@ -3686,7 +3753,9 @@
       "<p>Una capacidad de negocio no puede hacer parte de más de un proceso de negocio</p>"
     ],
     "correct_answers": [
-      "<p>Los procesos de negocio orquestan secuencias de capacidades para implementar los servicio de negocio</p>"
+      "<p>Los procesos de negocio orquestan secuencias de capacidades para implementar los servicio de negocio</p>",
+      "<p>Un servicio de negocio tiene asociados uno o más procesos de negocio que indican cómo se usa el servicio por parte de los actores</p>",
+      "<p>Todas las capacidades de negocio se deben implementar sobre el modelo operativo</p>"
     ]
   },
   {
@@ -3751,7 +3820,8 @@
       "<p>Los procesos internos no se implementan con capacidades de negocio</p>"
     ],
     "correct_answers": [
-      "<div>Todo servicio de negocio tiene asociado un conjunto de procesos de negocio</div>"
+      "<div>Todo servicio de negocio tiene asociado un conjunto de procesos de negocio</div>",
+      "<div>Un proceso de negocio define la manera en que la empresa va a componer sus capacidades para crear y entregar el valor prometido al cliente</div>"
     ]
   },
   {
@@ -3876,7 +3946,10 @@
       "<p>Recursos financieros</p>"
     ],
     "correct_answers": [
-      "<p>Tecnologías de información</p>"
+      "<p>Tecnologías de información</p>",
+      "<p>Insumos</p>",
+      "<p>Infraestructura</p>",
+      "<p>Proveedores externos de servicios</p>"
     ]
   },
   {
@@ -4001,7 +4074,9 @@
       "<p>Motores de procesos</p>"
     ],
     "correct_answers": [
-      "<p>Procesos de negocio</p>"
+      "<p>Procesos de negocio</p>",
+      "<p>Procesos internos</p>",
+      "<p>Procedimientos</p>"
     ]
   },
   {
@@ -4071,7 +4146,9 @@
       "<p>Los procesos de negocio orquestan capacidades de negocio</p>"
     ],
     "correct_answers": [
-      "<p>Los procesos de negocio orquestan los procesos internos de la organización</p>"
+      "<p>Los procesos de negocio orquestan los procesos internos de la organización</p>",
+      "<p>Los procesos internos son un subconjunto de los procesos de negocio de una organización</p>",
+      "<p>Por cada proceso de negocio hay 3 procesos internos en una organización</p>"
     ]
   },
   {
@@ -4471,7 +4548,9 @@
       "<p>Indicadores de ejecución</p>"
     ],
     "correct_answers": [
-      "<p>Indicadores estratégicos y tácticos</p>"
+      "<p>Indicadores estratégicos y tácticos</p>",
+      "<p>Indicadores operativos</p>",
+      "<p>Indicadores externos</p>"
     ]
   },
   {
@@ -4506,7 +4585,9 @@
       "<p>Solo se deben usar instrumentos de medición que sean precisos</p>"
     ],
     "correct_answers": [
-      "<p>Un instrumento de medición es directo cuando consulta una fuente primaria</p>"
+      "<p>Un instrumento de medición es directo cuando consulta una fuente primaria</p>",
+      "<p>Un instrumento de medición es indirecto cuando consulta una fuente secundaria</p>",
+      "<p>Cada instrumento tiene un nivel de precisión asociado</p>"
     ]
   },
   {
@@ -4676,7 +4757,9 @@
       "<p>Número de clientes nuevos en el último mes</p>"
     ],
     "correct_answers": [
-      "<p>Encuesta a los clientes a la salida de la tienda</p>"
+      "<p>Encuesta a los clientes a la salida de la tienda</p>",
+      "<p>Quejas recibidas por las redes sociales de la empresa</p>",
+      "<p>Llamadas telefónicas a los clientes recurrentes de la tienda</p>"
     ]
   },
   {
@@ -4692,7 +4775,9 @@
       "<p>Hacer planes</p>"
     ],
     "correct_answers": [
-      "<p>Observar</p>"
+      "<p>Observar</p>",
+      "<p>Estudiar y entender</p>",
+      "<p>Concluir</p>"
     ]
   },
   {
@@ -4737,7 +4822,9 @@
       "<p>Clima organizacional</p>"
     ],
     "correct_answers": [
-      "<p>Entorno global</p>"
+      "<p>Entorno global</p>",
+      "<p>Industria o vertical de negocio</p>",
+      "<p>Entorno de competencia directa</p>"
     ]
   },
   {
@@ -4753,7 +4840,9 @@
       "<p>El impacto de una fuerza sobre una empresa siempre es positivo</p>"
     ],
     "correct_answers": [
-      "<div>Una fuerza es algo que puede suceder o que ya está sucediendo en uno de los niveles del entorno de la empresa</div>"
+      "<div>Una fuerza es algo que puede suceder o que ya está sucediendo en uno de los niveles del entorno de la empresa</div>",
+      "<p>Las fuerzas se pueden clasificar en posibles y actuales</p>",
+      "<p>Las fuerzas son eventos y condiciones que la empresa no controla</p>"
     ]
   },
   {
@@ -4890,7 +4979,8 @@
       "<p>Riesgo de inversión</p>"
     ],
     "correct_answers": [
-      "<p>Crecimiento del mercado</p>"
+      "<p>Crecimiento del mercado</p>",
+      "<p>Participación en el mercado</p>"
     ]
   },
   {
@@ -4919,7 +5009,8 @@
       "<p>Nivel de riesgo operativo</p>"
     ],
     "correct_answers": [
-      "<p>Tamaño del mercado</p>"
+      "<p>Tamaño del mercado</p>",
+      "<p>Tiempo</p>"
     ]
   },
   {
@@ -4935,7 +5026,10 @@
       "<p>Contención</p>"
     ],
     "correct_answers": [
-      "<p>Inicio</p>"
+      "<p>Inicio</p>",
+      "<p>Crecimiento</p>",
+      "<p>Saturación</p>",
+      "<p>Declive</p>"
     ]
   },
   {
@@ -4989,7 +5083,8 @@
       "<p>Nivel de riesgo asociado con las ventajas posibles</p>"
     ],
     "correct_answers": [
-      "<p>Fuentes de ventajas</p>"
+      "<p>Fuentes de ventajas</p>",
+      "<p>Tamaño de las ventajas</p>"
     ]
   },
   {
@@ -5005,7 +5100,9 @@
       "<p>La ventaja está basada en tecnología</p>"
     ],
     "correct_answers": [
-      "<p>La ventaja es sostenible</p>"
+      "<p>La ventaja es sostenible</p>",
+      "<p>La ventaja es grande</p>",
+      "<p>La ventaja está relacionada con aspectos críticos del negocio</p>"
     ]
   },
   {
@@ -5050,7 +5147,9 @@
       "<p>La economía mundial está entrando en un periodo de recesión</p>"
     ],
     "correct_answers": [
-      "<p>Lo costos de producción son más bajos que los de los competidores</p>"
+      "<p>Lo costos de producción son más bajos que los de los competidores</p>",
+      "<p>Los tiempos de producción son más bajos que los de los competidores</p>",
+      "<p>Hay un alto nivel de fidelidad de los clientes hacia la empresa</p>"
     ]
   },
   {
@@ -5198,7 +5297,9 @@
       "<p>En el análisis DOFA, una debilidad es un característica actual de<br/>insuficiencia de la empresa, que puede dificultar el logro de sus objetivos.</p>"
     ],
     "correct_answers": [
-      "<p>En el análisis DOFA, los riesgos operativos son un caso particular de amenazas</p>"
+      "<p>En el análisis DOFA, los riesgos operativos son un caso particular de amenazas</p>",
+      "<p>En el análisis DOFA, las estrategias de la empresa representan oportunidades</p>",
+      "<p>En el análisis DOFA, una debilidad es una situación que puede ser causada por las acciones de un competidor</p>"
     ]
   },
   {
@@ -5230,7 +5331,10 @@
       "<p>Participación en el mercado</p>"
     ],
     "correct_answers": [
-      "<p>Fortaleza financiera</p>"
+      "<p>Fortaleza financiera</p>",
+      "<p>Ventaja competitiva</p>",
+      "<p>Atractivo de la industria</p>",
+      "<p>Estabilidad del ambiente</p>"
     ]
   },
   {
@@ -5326,7 +5430,8 @@
       "<p>Seguros de la empresa asociados con el riesgo</p>"
     ],
     "correct_answers": [
-      "<p>Frecuencia del suceso asociado con el riesgo</p>"
+      "<p>Frecuencia del suceso asociado con el riesgo</p>",
+      "<p>Efecto del suceso asociado con el riesgo</p>"
     ]
   },
   {
@@ -5590,7 +5695,8 @@
       "<p>TOGAF</p>"
     ],
     "correct_answers": [
-      "<p>REST</p>"
+      "<p>REST</p>",
+      "<p>SOAP</p>"
     ]
   },
   {
@@ -5619,7 +5725,9 @@
       "<p>Arquitectura de información = Arquitectura de datos + Gobierno de datos</p>"
     ],
     "correct_answers": [
-      "<p>Arquitectura de TI = Arquitectura de aplicaciones + Gobierno de TI + Función de TI</p>"
+      "<p>Arquitectura de TI = Arquitectura de aplicaciones + Gobierno de TI + Función de TI</p>",
+      "<p>Arquitectura de TI = Arquitectura de datos + Arquitectura de tecnología</p>",
+      "<p>Arquitectura de información = Arquitectura de datos + Gobierno de datos</p>"
     ]
   },
   {
@@ -5635,7 +5743,9 @@
       "<p>Modelo operativo</p>"
     ],
     "correct_answers": [
-      "<p>Arquitectura de TI</p>"
+      "<p>Arquitectura de TI</p>",
+      "<p>Gobierno de TI</p>",
+      "<p>Función de TI</p>"
     ]
   },
   {
@@ -5709,7 +5819,9 @@
       "<p>Data lakes</p>"
     ],
     "correct_answers": [
-      "<p>COTS</p>"
+      "<p>COTS</p>",
+      "<p>SAAS</p>",
+      "<p>Herramientas</p>"
     ]
   },
   {
@@ -5741,7 +5853,9 @@
       "<p>Portales transaccionales</p>"
     ],
     "correct_answers": [
-      "<p>Bases de datos</p>"
+      "<p>Bases de datos</p>",
+      "<p>Archivo de documentos físicos</p>",
+      "<p>Bodegas de datos</p>"
     ]
   },
   {
@@ -5783,7 +5897,8 @@
       "<p>Un CMS</p>"
     ],
     "correct_answers": [
-      "<p>Un Datacenter</p>"
+      "<p>Un Datacenter</p>",
+      "<p>Una nube</p>"
     ]
   },
   {
@@ -5867,7 +5982,8 @@
       "<p>Almacenar los documentos de una empresa</p>"
     ],
     "correct_answers": [
-      "<p>Almacenar la información de los clientes de una empresa</p>"
+      "<p>Almacenar la información de los clientes de una empresa</p>",
+      "<p>Almacenar los documentos de una empresa</p>"
     ]
   },
   {
@@ -5973,7 +6089,8 @@
       "<p>Manejar la infraestructura tecnológica de la empresa</p>"
     ],
     "correct_answers": [
-      "<p>Manejar toda la información no estructurada de la empresa: documentos, fotos, videos, voz, entre otros</p>"
+      "<p>Manejar toda la información no estructurada de la empresa: documentos, fotos, videos, voz, entre otros</p>",
+      "<p>Manejar el ciclo de vida de los documentos, incluida la conservación y la destrucción de los mismos</p>"
     ]
   },
   {

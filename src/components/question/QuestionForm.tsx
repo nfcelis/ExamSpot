@@ -25,11 +25,15 @@ const typeOptions = [
   { value: 'matching', label: 'Emparejar' },
 ]
 
-const schemas = {
+const schemas: Record<QuestionType, typeof multipleChoiceSchema | typeof openEndedSchema | typeof fillBlankSchema | typeof matchingSchema> = {
   multiple_choice: multipleChoiceSchema,
+  true_false: multipleChoiceSchema,
+  multi_select: multipleChoiceSchema,
   open_ended: openEndedSchema,
+  written_response: openEndedSchema,
   fill_blank: fillBlankSchema,
   matching: matchingSchema,
+  ordering: openEndedSchema,
 }
 
 const defaultsByType: Record<QuestionType, Record<string, unknown>> = {
@@ -40,7 +44,27 @@ const defaultsByType: Record<QuestionType, Record<string, unknown>> = {
     points: 10,
     explanation: '',
   },
+  true_false: {
+    question_text: '',
+    options: ['Verdadero', 'Falso'],
+    correct_answer: 0,
+    points: 10,
+    explanation: '',
+  },
+  multi_select: {
+    question_text: '',
+    options: ['', ''],
+    correct_answer: [],
+    points: 10,
+    explanation: '',
+  },
   open_ended: {
+    question_text: '',
+    correct_answer: '',
+    points: 10,
+    explanation: '',
+  },
+  written_response: {
     question_text: '',
     correct_answer: '',
     points: 10,
@@ -58,6 +82,12 @@ const defaultsByType: Record<QuestionType, Record<string, unknown>> = {
       { term: '', definition: '' },
       { term: '', definition: '' },
     ],
+    points: 10,
+    explanation: '',
+  },
+  ordering: {
+    question_text: '',
+    correct_answer: '',
     points: 10,
     explanation: '',
   },

@@ -5,10 +5,11 @@ node_modules
 dist
 dist-ssr
 
-# Environment
+# Environment — NEVER commit these
 .env
 .env.local
 .env.*.local
+.env.production
 
 # IDE
 .vscode/*
@@ -18,11 +19,25 @@ dist-ssr
 
 # OS
 .DS_Store
+.DS_Store?
 Thumbs.db
+._*
 
 # Logs
 *.log
 npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
 
 # Testing
 coverage
+
+# Misc
+*.local
+.cache
+tmp/
+temp/
+
+# D2L export folder (large, not needed in repo)
+scripts/D2LExport_424260_202610_ISIS2403_3_202621159/

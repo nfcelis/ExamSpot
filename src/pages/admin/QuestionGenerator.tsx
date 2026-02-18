@@ -7,6 +7,7 @@ import { LoadingSpinner } from '../../components/common/LoadingSpinner'
 import { generateQuestionsWithAI } from '../../services/adminService'
 import { extractTextFromFile, getSupportedExtensions, getFileTypeLabel } from '../../services/fileExtractService'
 import { supabase } from '../../lib/supabase'
+import { AI_QUESTION_TYPE_OPTIONS } from '../../lib/questionTypeConstants'
 import toast from 'react-hot-toast'
 
 export function QuestionGenerator() {
@@ -21,12 +22,7 @@ export function QuestionGenerator() {
   const [generating, setGenerating] = useState(false)
   const [generatedCount, setGeneratedCount] = useState<number | null>(null)
 
-  const questionTypes = [
-    { value: 'multiple_choice', label: 'Opción Múltiple' },
-    { value: 'open_ended', label: 'Respuesta Abierta' },
-    { value: 'fill_blank', label: 'Rellenar Espacios' },
-    { value: 'matching', label: 'Emparejar' },
-  ]
+  const questionTypes = AI_QUESTION_TYPE_OPTIONS
 
   const toggleType = (type: string) => {
     setSelectedTypes(prev =>

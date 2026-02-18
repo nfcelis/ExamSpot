@@ -440,3 +440,17 @@ export async function deleteQuestion(id: string): Promise<void> {
 
   if (error) throw error
 }
+
+export async function deleteAllMyQuestions(): Promise<number> {
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) throw new Error('No autenticado')
+
+  const { data, error } = await supabase
+    .from('question_bank')
+    .delete()
+    .eq('created_by', user.id)
+    .select('id')
+
+  if (error) throw error
+  return data?.length ?? 0
+}

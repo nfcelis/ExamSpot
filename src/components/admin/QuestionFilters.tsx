@@ -57,9 +57,13 @@ export function QuestionFilters({ filters, onChange, showStatus }: QuestionFilte
       >
         <option value="">Todos los tipos</option>
         <option value="multiple_choice">Opción Múltiple</option>
+        <option value="true_false">Verdadero/Falso</option>
+        <option value="multi_select">Selección Múltiple</option>
         <option value="open_ended">Respuesta Abierta</option>
+        <option value="written_response">Respuesta Escrita</option>
         <option value="fill_blank">Rellenar Espacios</option>
         <option value="matching">Emparejar</option>
+        <option value="ordering">Ordenar</option>
       </select>
 
       <select

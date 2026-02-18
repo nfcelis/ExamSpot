@@ -51,8 +51,8 @@ export function useCreateAttempt() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: ({ examId, userId }: { examId: string; userId: string }) =>
-      createAttempt(examId, userId),
+    mutationFn: ({ examId, userId, isPractice = false }: { examId: string; userId: string; isPractice?: boolean }) =>
+      createAttempt(examId, userId, isPractice),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['myAttempts'] })
     },

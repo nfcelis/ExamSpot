@@ -1,12 +1,13 @@
 import { supabase } from '../lib/supabase'
 import type { ExamAttempt, ExamAnswer } from '../types/exam'
 
-export async function createAttempt(examId: string, userId: string): Promise<ExamAttempt> {
+export async function createAttempt(examId: string, userId: string, isPractice = false): Promise<ExamAttempt> {
   const { data, error } = await supabase
     .from('exam_attempts')
     .insert({
       exam_id: examId,
       user_id: userId,
+      is_practice: isPractice,
     })
     .select()
     .single()

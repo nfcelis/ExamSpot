@@ -18,6 +18,8 @@ export function ExamCreatePage() {
         is_public: data.is_public,
         time_limit: data.time_limit,
         randomize_order: data.randomize_order,
+        show_correct_answers: data.show_correct_answers,
+        show_feedback: data.show_feedback,
         status: data.publish_immediately ? 'published' : 'draft',
       },
       {

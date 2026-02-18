@@ -20,6 +20,7 @@ export function PracticeConfigPage() {
   const [mediumPct, setMediumPct] = useState(50)
   const [hardPct, setHardPct] = useState(20)
   const [showCorrectAnswers, setShowCorrectAnswers] = useState(true)
+  const [showFeedback, setShowFeedback] = useState(true)
   const [allowRetry, setAllowRetry] = useState(true)
 
   useEffect(() => {
@@ -34,6 +35,7 @@ export function PracticeConfigPage() {
         setMediumPct(data.difficulty_distribution.medium)
         setHardPct(data.difficulty_distribution.hard)
         setShowCorrectAnswers(data.show_correct_answers)
+        setShowFeedback(data.show_feedback ?? true)
         setAllowRetry(data.allow_retry)
       } catch (err) {
         toast.error('Error al cargar configuración')
@@ -66,6 +68,7 @@ export function PracticeConfigPage() {
           hard: hardPct,
         },
         show_correct_answers: showCorrectAnswers,
+        show_feedback: showFeedback,
         allow_retry: allowRetry,
       })
       setConfig(updated)
@@ -210,6 +213,15 @@ export function PracticeConfigPage() {
                   className="h-4 w-4 rounded border-secondary-300 text-primary-600 focus:ring-primary-500"
                 />
                 <span className="text-sm text-secondary-700">Mostrar respuestas correctas al finalizar</span>
+              </label>
+              <label className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  checked={showFeedback}
+                  onChange={(e) => setShowFeedback(e.target.checked)}
+                  className="h-4 w-4 rounded border-secondary-300 text-primary-600 focus:ring-primary-500"
+                />
+                <span className="text-sm text-secondary-700">Mostrar feedback de IA al finalizar</span>
               </label>
               <label className="flex items-center gap-2">
                 <input

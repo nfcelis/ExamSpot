@@ -7,10 +7,12 @@ import { Badge } from '../components/common/Badge'
 import { Modal } from '../components/common/Modal'
 import { ConfirmDialog } from '../components/common/ConfirmDialog'
 import { SafeHtml } from '../components/common/SafeHtml'
+import { ExamForm } from '../components/exam/ExamForm'
 import { MaterialUpload } from '../components/teacher/MaterialUpload'
 import { QuestionBankBrowser } from '../components/teacher/QuestionBankBrowser'
 import { LoadingSpinner } from '../components/common/LoadingSpinner'
 import { useExam, useUpdateExam, useDeleteExam } from '../hooks/useExams'
+import type { ExamFormValues } from '../lib/validators'
 import {
   getExamQuestions,
   getExamQuestionIds,
@@ -32,11 +34,14 @@ export function ExamEditPage() {
   const navigate = useNavigate()
   const [showBankModal, setShowBankModal] = useState(false)
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
+  const [showSettingsModal, setShowSettingsModal] = useState(false)
   const [examQuestions, setExamQuestions] = useState<QuestionBankItem[]>([])
   const [examQuestionIds, setExamQuestionIds] = useState<string[]>([])
   const [questionsLoading, setQuestionsLoading] = useState(true)
   const [addingQuestions, setAddingQuestions] = useState(false)
   const [removingId, setRemovingId] = useState<string | null>(null)
+  const [localShowCorrectAnswers, setLocalShowCorrectAnswers] = useState(true)
+  const [localShowFeedback, setLocalShowFeedback] = useState(true)
 
   const { data: exam, isLoading: examLoading } = useExam(id)
   const updateExam = useUpdateExam()
@@ -62,6 +67,13 @@ export function ExamEditPage() {
   useEffect(() => {
     loadQuestions()
   }, [loadQuestions])
+
+  useEffect(() => {
+    if (exam) {
+      setLocalShowCorrectAnswers(exam.show_correct_answers ?? true)
+      setLocalShowFeedback(exam.show_feedback ?? true)
+    }
+  }, [exam])
 
   if (examLoading) {
     return (
@@ -97,6 +109,34 @@ export function ExamEditPage() {
     deleteExam.mutate(exam.id, {
       onSuccess: () => navigate('/dashboard'),
     })
+  }
+
+  const handleToggleCorrectAnswers = (checked: boolean) => {
+    setLocalShowCorrectAnswers(checked)
+    updateExam.mutate({ id: exam!.id, data: { show_correct_answers: checked } })
+  }
+
+  const handleToggleFeedback = (checked: boolean) => {
+    setLocalShowFeedback(checked)
+    updateExam.mutate({ id: exam!.id, data: { show_feedback: checked } })
+  }
+
+  const handleSettingsSubmit = (data: ExamFormValues) => {
+    updateExam.mutate(
+      {
+        id: exam.id,
+        data: {
+          title: data.title,
+          description: data.description || undefined,
+          is_public: data.is_public,
+          time_limit: data.time_limit,
+          randomize_order: data.randomize_order,
+          show_correct_answers: data.show_correct_answers,
+          show_feedback: data.show_feedback,
+        },
+      },
+      { onSuccess: () => setShowSettingsModal(false) }
+    )
   }
 
   const handleAddFromBank = async (bankQuestions: QuestionBankItem[]) => {
@@ -171,10 +211,51 @@ export function ExamEditPage() {
                   </Button>
                 </>
               )}
+              <Button variant="secondary" onClick={() => setShowSettingsModal(true)}>
+                Configuración
+              </Button>
               <Button variant="danger" onClick={() => setShowDeleteDialog(true)}>
                 Eliminar
               </Button>
             </div>
+          </div>
+        </Card>
+
+        {/* Results Settings */}
+        <Card>
+          <h3 className="mb-1 font-semibold text-secondary-900">Resultados para estudiantes</h3>
+          <p className="mb-4 text-sm text-secondary-500">
+            Controla qué información ven los estudiantes al finalizar el examen.
+          </p>
+          <div className="space-y-4">
+            <label className="flex cursor-pointer items-start gap-3">
+              <input
+                type="checkbox"
+                checked={localShowCorrectAnswers}
+                onChange={(e) => handleToggleCorrectAnswers(e.target.checked)}
+                className="mt-0.5 h-4 w-4 rounded border-secondary-300 text-primary-600 focus:ring-primary-500"
+              />
+              <div>
+                <p className="text-sm font-medium text-secondary-700">Mostrar respuestas correctas</p>
+                <p className="text-xs text-secondary-400">
+                  El estudiante verá cuál era la respuesta correcta en cada pregunta
+                </p>
+              </div>
+            </label>
+            <label className="flex cursor-pointer items-start gap-3">
+              <input
+                type="checkbox"
+                checked={localShowFeedback}
+                onChange={(e) => handleToggleFeedback(e.target.checked)}
+                className="mt-0.5 h-4 w-4 rounded border-secondary-300 text-primary-600 focus:ring-primary-500"
+              />
+              <div>
+                <p className="text-sm font-medium text-secondary-700">Mostrar feedback de IA</p>
+                <p className="text-xs text-secondary-400">
+                  El estudiante verá la retroalimentación y análisis generado por IA
+                </p>
+              </div>
+            </label>
           </div>
         </Card>
 
@@ -316,6 +397,29 @@ export function ExamEditPage() {
           )}
         </div>
       </div>
+
+      {/* Settings Modal */}
+      <Modal
+        isOpen={showSettingsModal}
+        onClose={() => setShowSettingsModal(false)}
+        title="Configuración del examen"
+      >
+        <ExamForm
+          exam={exam}
+          defaultValues={{
+            title: exam.title,
+            description: exam.description ?? '',
+            is_public: exam.is_public,
+            time_limit: exam.time_limit,
+            randomize_order: exam.randomize_order,
+            show_correct_answers: exam.show_correct_answers ?? true,
+            show_feedback: exam.show_feedback ?? true,
+          }}
+          onSubmit={handleSettingsSubmit}
+          loading={updateExam.isPending}
+          showPublishOption={false}
+        />
+      </Modal>
 
       {/* Question Bank Browser Modal */}
       <Modal

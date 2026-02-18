@@ -15,6 +15,8 @@ export interface CreateExamData {
   is_public?: boolean
   time_limit?: number | null
   randomize_order?: boolean
+  show_correct_answers?: boolean
+  show_feedback?: boolean
 }
 
 export interface UpdateExamData extends Partial<CreateExamData> {}

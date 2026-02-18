@@ -8,6 +8,8 @@ interface ResultsViewProps {
   attempt: ExamAttempt
   answers: ExamAnswer[]
   questions: Question[]
+  showCorrectAnswers?: boolean
+  showFeedback?: boolean
 }
 
 function getMotivationalMessage(percentage: number): string {
@@ -24,7 +26,7 @@ const typeLabels: Record<string, string> = {
   matching: 'Emparejar',
 }
 
-export function ResultsView({ attempt, answers, questions }: ResultsViewProps) {
+export function ResultsView({ attempt, answers, questions, showCorrectAnswers = true, showFeedback = true }: ResultsViewProps) {
   return (
     <div className="space-y-6">
       {/* Score Summary */}
@@ -81,7 +83,7 @@ export function ResultsView({ attempt, answers, questions }: ResultsViewProps) {
               </div>
 
               {/* Correct answer */}
-              {examAnswer && !examAnswer.is_correct && question.type !== 'open_ended' && (
+              {showCorrectAnswers && examAnswer && !examAnswer.is_correct && question.type !== 'open_ended' && (
                 <div className="rounded-lg border border-green-200 bg-green-50 p-3 text-sm text-green-600">
                   <span className="font-medium text-green-700">Respuesta correcta: </span>
                   {renderCorrectAnswer(question)}
@@ -89,7 +91,7 @@ export function ResultsView({ attempt, answers, questions }: ResultsViewProps) {
               )}
 
               {/* AI Feedback */}
-              {examAnswer?.feedback && (
+              {showFeedback && examAnswer?.feedback && (
                 <div className="rounded-lg border border-blue-200 bg-blue-50 p-3 text-sm text-blue-800">
                   <span className="font-medium">Retroalimentación: </span>
                   {examAnswer.feedback}
@@ -97,12 +99,12 @@ export function ResultsView({ attempt, answers, questions }: ResultsViewProps) {
               )}
 
               {/* AI Analysis strengths/improvements */}
-              {examAnswer?.ai_analysis != null && typeof examAnswer.ai_analysis === 'object' ? (
+              {showFeedback && examAnswer?.ai_analysis != null && typeof examAnswer.ai_analysis === 'object' ? (
                 <AIAnalysisBlock analysis={examAnswer.ai_analysis as AIAnalysis} />
               ) : null}
 
-              {/* Explanation */}
-              {question.explanation && (
+              {/* Explanation (admin-authored, gated by showFeedback) */}
+              {showFeedback && question.explanation && (
                 <div className="rounded-lg bg-secondary-50 p-3 text-sm text-secondary-600">
                   <span className="font-medium">Explicación: </span>
                   {question.explanation}

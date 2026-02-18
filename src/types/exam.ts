@@ -13,6 +13,8 @@ export interface Exam {
   randomize_order: boolean
   time_limit: number | null
   question_count: number
+  show_correct_answers: boolean
+  show_feedback: boolean
   created_at: string
   updated_at: string
 }
@@ -65,6 +67,7 @@ export interface PracticeConfig {
   }
   categories_enabled: string[] | null
   show_correct_answers: boolean
+  show_feedback: boolean
   allow_retry: boolean
   updated_by: string | null
   updated_at: string

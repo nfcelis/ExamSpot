@@ -98,7 +98,7 @@ export function ExamTakePage() {
 
   const handleStart = () => {
     if (!user) return
-    createAttempt.mutate({ examId: exam.id, userId: user.id })
+    createAttempt.mutate({ examId: exam.id, userId: user.id, isPractice: exam.status === 'practice' })
   }
 
   return (

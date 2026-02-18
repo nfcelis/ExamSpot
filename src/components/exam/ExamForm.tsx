@@ -29,6 +29,8 @@ export function ExamForm({ defaultValues, onSubmit, loading, exam, showPublishOp
       is_public: true,
       time_limit: null as number | null,
       randomize_order: false,
+      show_correct_answers: true,
+      show_feedback: true,
       publish_immediately: false,
       ...defaultValues,
     },
@@ -119,6 +121,35 @@ export function ExamForm({ defaultValues, onSubmit, loading, exam, showPublishOp
             </p>
           </div>
         )}
+      </div>
+
+      {/* Results visibility */}
+      <div className="space-y-2">
+        <p className="text-sm font-medium text-secondary-700">Resultados</p>
+        <div className="grid gap-3 sm:grid-cols-2">
+          <div className="flex items-center gap-3">
+            <input
+              type="checkbox"
+              id="show_correct_answers"
+              className="h-4 w-4 rounded border-secondary-300 text-primary-600 focus:ring-primary-500"
+              {...register('show_correct_answers')}
+            />
+            <label htmlFor="show_correct_answers" className="text-sm text-secondary-700">
+              Mostrar respuestas correctas
+            </label>
+          </div>
+          <div className="flex items-center gap-3">
+            <input
+              type="checkbox"
+              id="show_feedback"
+              className="h-4 w-4 rounded border-secondary-300 text-primary-600 focus:ring-primary-500"
+              {...register('show_feedback')}
+            />
+            <label htmlFor="show_feedback" className="text-sm text-secondary-700">
+              Mostrar feedback de IA
+            </label>
+          </div>
+        </div>
       </div>
 
       {/* Publish Option - Only show when creating a new exam */}

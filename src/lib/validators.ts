@@ -15,6 +15,8 @@ export const examFormSchema = z.object({
     .nullable()
     .optional(),
   randomize_order: z.boolean().default(false),
+  show_correct_answers: z.boolean().default(true),
+  show_feedback: z.boolean().default(true),
   publish_immediately: z.boolean().default(false),
 })
 

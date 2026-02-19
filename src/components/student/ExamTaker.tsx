@@ -158,7 +158,11 @@ export function ExamTaker({ exam, attempt, questions }: ExamTakerProps) {
       {currentQuestion && (
         <Card>
           <div className="mb-4 flex items-start justify-between">
-            <SafeHtml html={currentQuestion.question_text} className="font-medium text-secondary-900" />
+            {currentQuestion.type !== 'fill_blank' ? (
+              <SafeHtml html={currentQuestion.question_text} className="font-medium text-secondary-900" />
+            ) : (
+              <span className="font-semibold text-secondary-900">Rellena los espacios en blanco:</span>
+            )}
             <span className="ml-2 shrink-0 text-xs text-secondary-400">
               {currentQuestion.points} pts
             </span>

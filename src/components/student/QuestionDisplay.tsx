@@ -1,5 +1,4 @@
 import { Textarea } from '../common/Textarea'
-import { Input } from '../common/Input'
 import { SafeHtml } from '../common/SafeHtml'
 import type { Question } from '../../types/question'
 
@@ -173,7 +172,12 @@ function FillBlankDisplay({
   answer: string[]
   onChange: (v: unknown) => void
 }) {
-  const parts = question.question_text.split('___')
+  // Strip HTML tags before splitting so block elements (like <p>) don't break inline layout
+  const el = document.createElement('div')
+  el.innerHTML = question.question_text
+  const plainText = el.textContent || question.question_text
+
+  const parts = plainText.split('___')
   const blankCount = parts.length - 1
 
   const handleBlankChange = (index: number, value: string) => {
@@ -183,22 +187,20 @@ function FillBlankDisplay({
   }
 
   return (
-    <div className="space-y-4">
-      <div className="leading-relaxed text-secondary-700">
-        {parts.map((part, i) => (
-          <span key={i}>
-            <SafeHtml html={part} inline />
-            {i < blankCount && (
-              <Input
-                className="mx-1 inline-block w-40"
-                placeholder={`Espacio ${i + 1}`}
-                value={answer[i] || ''}
-                onChange={(e) => handleBlankChange(i, e.target.value)}
-              />
-            )}
-          </span>
-        ))}
-      </div>
+    <div className="leading-relaxed text-secondary-700">
+      {parts.map((part, i) => (
+        <span key={i}>
+          {part}
+          {i < blankCount && (
+            <input
+              className="mx-1 inline-block w-32 rounded border border-secondary-400 bg-white px-1.5 py-0.5 text-sm text-secondary-900 placeholder-secondary-300 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
+              placeholder={`${i + 1}`}
+              value={answer[i] || ''}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleBlankChange(i, e.target.value)}
+            />
+          )}
+        </span>
+      ))}
     </div>
   )
 }

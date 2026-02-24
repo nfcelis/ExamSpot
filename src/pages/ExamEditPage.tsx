@@ -6,10 +6,11 @@ import { Button } from '../components/common/Button'
 import { Badge } from '../components/common/Badge'
 import { Modal } from '../components/common/Modal'
 import { ConfirmDialog } from '../components/common/ConfirmDialog'
-import { SafeHtml } from '../components/common/SafeHtml'
 import { ExamForm } from '../components/exam/ExamForm'
 import { MaterialUpload } from '../components/teacher/MaterialUpload'
 import { QuestionBankBrowser } from '../components/teacher/QuestionBankBrowser'
+import { RandomQuestionModal } from '../components/teacher/RandomQuestionModal'
+import { QuestionPreview } from '../components/question/QuestionPreview'
 import { LoadingSpinner } from '../components/common/LoadingSpinner'
 import { useExam, useUpdateExam, useDeleteExam } from '../hooks/useExams'
 import type { ExamFormValues } from '../lib/validators'
@@ -20,15 +21,13 @@ import {
   removeQuestionFromExam,
 } from '../services/examService'
 import type { QuestionBankItem } from '../types/question'
-import { QUESTION_TYPE_LABELS } from '../lib/questionTypeConstants'
 import toast from 'react-hot-toast'
-
-const typeLabels = QUESTION_TYPE_LABELS
 
 export function ExamEditPage() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const [showBankModal, setShowBankModal] = useState(false)
+  const [showRandomModal, setShowRandomModal] = useState(false)
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
   const [showSettingsModal, setShowSettingsModal] = useState(false)
   const [examQuestions, setExamQuestions] = useState<QuestionBankItem[]>([])
@@ -264,12 +263,21 @@ export function ExamEditPage() {
             <h2 className="text-lg font-semibold text-secondary-900">
               Preguntas del Examen
             </h2>
-            <Button onClick={() => setShowBankModal(true)}>
-              <svg className="mr-1.5 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-              </svg>
-              Agregar del Banco
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button variant="secondary" onClick={() => setShowRandomModal(true)}>
+                <svg className="mr-1.5 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                    d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                </svg>
+                Generar Aleatoriamente
+              </Button>
+              <Button onClick={() => setShowBankModal(true)}>
+                <svg className="mr-1.5 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                </svg>
+                Agregar del Banco
+              </Button>
+            </div>
           </div>
 
           {questionsLoading ? (
@@ -285,99 +293,36 @@ export function ExamEditPage() {
               <p className="mt-1 text-sm text-secondary-500">
                 Agrega preguntas del banco aprobado para este examen.
               </p>
-              <Button onClick={() => setShowBankModal(true)} className="mt-4">
-                Agregar del Banco
-              </Button>
+              <div className="mt-4 flex justify-center gap-2">
+                <Button variant="secondary" onClick={() => setShowRandomModal(true)}>
+                  Generar Aleatoriamente
+                </Button>
+                <Button onClick={() => setShowBankModal(true)}>
+                  Agregar del Banco
+                </Button>
+              </div>
             </Card>
           ) : (
             <div className="space-y-3">
               {examQuestions.map((q, index) => (
-                <Card key={q.id} className="transition-all hover:shadow-md">
-                  <div className="flex items-start justify-between gap-4">
-                    <div className="min-w-0 flex-1">
-                      <div className="mb-1 flex flex-wrap items-center gap-2">
-                        <span className="text-xs font-medium text-secondary-400">
-                          #{index + 1}
+                <div key={q.id}>
+                  <div className="mb-1.5 flex items-center justify-between px-1">
+                    <div className="flex flex-wrap gap-1.5">
+                      {q.category && (
+                        <span className="rounded-full bg-secondary-100 px-2 py-0.5 text-xs text-secondary-500">
+                          {q.category}
                         </span>
-                        <span className="rounded-full bg-blue-100 px-2 py-0.5 text-xs font-medium text-blue-700">
-                          {typeLabels[q.type] || q.type}
+                      )}
+                      {q.difficulty && (
+                        <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${
+                          q.difficulty === 'easy' ? 'bg-green-100 text-green-700' :
+                          q.difficulty === 'medium' ? 'bg-yellow-100 text-yellow-700' :
+                          'bg-red-100 text-red-700'
+                        }`}>
+                          {q.difficulty === 'easy' ? 'Fácil' : q.difficulty === 'medium' ? 'Medio' : 'Difícil'}
                         </span>
-                        <span className="text-xs text-secondary-400">
-                          {q.points} pts
-                        </span>
-                        {q.category && (
-                          <span className="text-xs text-secondary-400">
-                            {q.category}
-                          </span>
-                        )}
-                        {q.difficulty && (
-                          <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${
-                            q.difficulty === 'easy' ? 'bg-green-100 text-green-700' :
-                            q.difficulty === 'medium' ? 'bg-yellow-100 text-yellow-700' :
-                            'bg-red-100 text-red-700'
-                          }`}>
-                            {q.difficulty === 'easy' ? 'Fácil' : q.difficulty === 'medium' ? 'Medio' : 'Difícil'}
-                          </span>
-                        )}
-                      </div>
-                      <SafeHtml html={q.question_text} className="text-sm font-medium text-secondary-800" />
-
-                      {/* Multiple choice — opción correcta en verde */}
-                      {q.type === 'multiple_choice' && q.options && (
-                        <div className="mt-2 space-y-1">
-                          {q.options.map((opt, idx) => {
-                            const isCorrect = Array.isArray(q.correct_answer)
-                              ? (q.correct_answer as number[]).includes(idx)
-                              : idx === (q.correct_answer as number)
-                            return (
-                              <div key={idx} className={`rounded px-2 py-0.5 text-xs ${
-                                isCorrect
-                                  ? 'bg-green-50 font-medium text-green-700'
-                                  : 'text-secondary-500'
-                              }`}>
-                                {String.fromCharCode(65 + idx)}. <SafeHtml html={opt} inline />
-                              </div>
-                            )
-                          })}
-                        </div>
-                      )}
-
-                      {/* Respuesta abierta — muestra respuesta modelo */}
-                      {q.type === 'open_ended' && Boolean(q.correct_answer) && (
-                        <div className="mt-2 rounded bg-green-50 px-2 py-1.5 text-xs text-green-700">
-                          <span className="font-medium">Respuesta modelo: </span>
-                          {Array.isArray(q.correct_answer)
-                            ? (q.correct_answer as string[]).map((a, i) => (
-                                <span key={i}>{i > 0 && <span className="mx-1">·</span>}<SafeHtml html={a} inline /></span>
-                              ))
-                            : <SafeHtml html={q.correct_answer as string} inline />}
-                        </div>
-                      )}
-
-                      {/* Rellenar espacios — muestra las respuestas correctas */}
-                      {q.type === 'fill_blank' && Array.isArray(q.correct_answer) && (
-                        <div className="mt-2 rounded bg-green-50 px-2 py-1.5 text-xs text-green-700">
-                          <span className="font-medium">Respuestas: </span>
-                          {(q.correct_answer as string[]).map((a, i) => (
-                            <span key={i}>{i > 0 && <span className="mx-1">·</span>}<SafeHtml html={a} inline /></span>
-                          ))}
-                        </div>
-                      )}
-
-                      {/* Emparejar — muestra los pares término → definición */}
-                      {q.type === 'matching' && q.terms && (
-                        <div className="mt-2 space-y-1">
-                          {q.terms.map((pair, i) => (
-                            <div key={i} className="flex items-center gap-1.5 text-xs">
-                              <SafeHtml html={pair.term} className="rounded bg-secondary-100 px-1.5 py-0.5 text-secondary-700" inline />
-                              <span className="text-secondary-400">→</span>
-                              <SafeHtml html={pair.definition} className="text-green-700" inline />
-                            </div>
-                          ))}
-                        </div>
                       )}
                     </div>
-
                     <Button
                       variant="ghost"
                       size="sm"
@@ -387,7 +332,18 @@ export function ExamEditPage() {
                       Quitar
                     </Button>
                   </div>
-                </Card>
+                  <QuestionPreview
+                    question={{
+                      ...q,
+                      exam_id: '',
+                      material_reference: q.reference_material || null,
+                      order_index: index,
+                      allow_partial_credit: q.allow_partial_credit ?? false,
+                    }}
+                    index={index}
+                    showAnswer
+                  />
+                </div>
               ))}
             </div>
           )}
@@ -426,6 +382,23 @@ export function ExamEditPage() {
       >
         <QuestionBankBrowser
           onAddQuestions={handleAddFromBank}
+          loading={addingQuestions}
+          excludeIds={examQuestionIds}
+        />
+      </Modal>
+
+      {/* Random Question Generator Modal */}
+      <Modal
+        isOpen={showRandomModal}
+        onClose={() => setShowRandomModal(false)}
+        title="Generar preguntas aleatorias"
+        className="max-w-md"
+      >
+        <RandomQuestionModal
+          onAddQuestions={async (questions) => {
+            await handleAddFromBank(questions)
+            setShowRandomModal(false)
+          }}
           loading={addingQuestions}
           excludeIds={examQuestionIds}
         />

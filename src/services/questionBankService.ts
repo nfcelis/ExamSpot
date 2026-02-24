@@ -130,6 +130,31 @@ export async function getCategoryList(): Promise<string[]> {
   return Array.from(categories).sort()
 }
 
+// ===== Selección Aleatoria para Profesores =====
+
+export async function getRandomApprovedQuestions(config: {
+  count: number
+  category?: string
+  difficulty?: QuestionDifficulty
+  excludeIds?: string[]
+}): Promise<QuestionBankItem[]> {
+  const filters: QuestionBankFilters = {}
+  if (config.category) filters.category = config.category
+  if (config.difficulty) filters.difficulty = config.difficulty
+
+  const all = await getApprovedQuestions(filters)
+  const excludeSet = new Set(config.excludeIds || [])
+  const available = all.filter(q => !excludeSet.has(q.id))
+
+  // Fisher-Yates shuffle y tomar los primeros `count`
+  for (let i = available.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1))
+    ;[available[i], available[j]] = [available[j], available[i]]
+  }
+
+  return available.slice(0, config.count)
+}
+
 // ===== Legacy compatibility =====
 
 export async function getQuestionBank(filters?: QuestionBankFilters): Promise<QuestionBankItem[]> {

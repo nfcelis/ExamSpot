@@ -10,6 +10,7 @@ import { useQuestions } from '../hooks/useQuestions'
 import { useCreateAttempt, useMyAttempts } from '../hooks/useAttempts'
 import { useAuthStore } from '../store/authStore'
 import { getExamQuestions } from '../services/examService'
+import { getPracticeQuestionsForStudent } from '../services/questionService'
 import type { Question } from '../types/question'
 
 export function ExamTakePage() {
@@ -25,31 +26,41 @@ export function ExamTakePage() {
   const [bankLoading, setBankLoading] = useState(false)
 
   useEffect(() => {
-    if (!id || questionsLoading || legacyQuestions.length > 0) return
-    setBankLoading(true)
-    getExamQuestions(id)
-      .then((items) => {
-        // Map QuestionBankItem to Question shape
-        const mapped: Question[] = items.map((q, i) => ({
-          id: q.id,
-          exam_id: id,
-          type: q.type,
-          question_text: q.question_text,
-          options: q.options,
-          correct_answer: q.correct_answer,
-          terms: q.terms,
-          points: q.points,
-          explanation: q.explanation,
-          material_reference: q.reference_material || null,
-          order_index: i,
-          allow_partial_credit: q.allow_partial_credit,
-          created_at: q.created_at,
-        }))
-        setBankQuestions(mapped)
-      })
-      .catch((err) => console.error('Error loading exam_questions:', err))
-      .finally(() => setBankLoading(false))
-  }, [id, questionsLoading, legacyQuestions.length])
+    if (!id || questionsLoading || !exam) return
+
+    if (exam.status === 'practice') {
+      // Práctica: usar RPC segura que NO devuelve correct_answer
+      setBankLoading(true)
+      getPracticeQuestionsForStudent(id)
+        .then(setBankQuestions)
+        .catch((err) => console.error('Error loading practice questions:', err))
+        .finally(() => setBankLoading(false))
+    } else if (legacyQuestions.length === 0) {
+      // Examen normal sin preguntas legacy: intentar exam_questions (nuevo sistema)
+      setBankLoading(true)
+      getExamQuestions(id)
+        .then((items) => {
+          const mapped: Question[] = items.map((q, i) => ({
+            id: q.id,
+            exam_id: id,
+            type: q.type,
+            question_text: q.question_text,
+            options: q.options,
+            correct_answer: q.correct_answer,
+            terms: q.terms,
+            points: q.points,
+            explanation: q.explanation,
+            material_reference: q.reference_material || null,
+            order_index: i,
+            allow_partial_credit: q.allow_partial_credit,
+            created_at: q.created_at,
+          }))
+          setBankQuestions(mapped)
+        })
+        .catch((err) => console.error('Error loading exam_questions:', err))
+        .finally(() => setBankLoading(false))
+    }
+  }, [id, questionsLoading, legacyQuestions.length, exam?.status])
 
   const questions = legacyQuestions.length > 0 ? legacyQuestions : bankQuestions
   const loading = examLoading || questionsLoading || bankLoading

@@ -7,9 +7,10 @@ import type { UserRole } from '../../types/user'
 interface ProtectedRouteProps {
   children: ReactNode
   requireRole?: UserRole
+  requireSuperAdmin?: boolean
 }
 
-export function ProtectedRoute({ children, requireRole }: ProtectedRouteProps) {
+export function ProtectedRoute({ children, requireRole, requireSuperAdmin }: ProtectedRouteProps) {
   const { user, profile, loading, initialized } = useAuthStore()
 
   if (!initialized || loading) {
@@ -22,6 +23,10 @@ export function ProtectedRoute({ children, requireRole }: ProtectedRouteProps) {
 
   if (requireRole && profile?.role !== requireRole) {
     return <Navigate to="/dashboard" replace />
+  }
+
+  if (requireSuperAdmin && !profile?.is_super_admin) {
+    return <Navigate to="/admin" replace />
   }
 
   return <>{children}</>

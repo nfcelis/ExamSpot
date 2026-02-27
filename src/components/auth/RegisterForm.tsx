@@ -6,14 +6,12 @@ import { useAuth } from '../../hooks/useAuth'
 import { Button } from '../common/Button'
 import { Input } from '../common/Input'
 import { useState } from 'react'
-import type { UserRole } from '../../types/user'
 
 const registerSchema = z.object({
   fullName: z.string().min(2, 'El nombre debe tener al menos 2 caracteres'),
   email: z.string().email('Email inválido'),
   password: z.string().min(6, 'La contraseña debe tener al menos 6 caracteres'),
   confirmPassword: z.string(),
-  role: z.enum(['student', 'teacher'] as const),
 }).refine((data) => data.password === data.confirmPassword, {
   message: 'Las contraseñas no coinciden',
   path: ['confirmPassword'],
@@ -32,15 +30,12 @@ export function RegisterForm() {
     formState: { errors },
   } = useForm<RegisterFormData>({
     resolver: zodResolver(registerSchema),
-    defaultValues: {
-      role: 'student',
-    },
   })
 
   const onSubmit = async (data: RegisterFormData) => {
     setIsLoading(true)
     try {
-      await signUp(data.email, data.password, data.role as UserRole, data.fullName)
+      await signUp(data.email, data.password, data.fullName)
       navigate('/login')
     } catch {
       // Error handled by useAuth toast
@@ -87,34 +82,9 @@ export function RegisterForm() {
         {...register('confirmPassword')}
       />
 
-      <div>
-        <label className="mb-1 block text-sm font-medium text-secondary-700">
-          Rol
-        </label>
-        <div className="flex gap-4">
-          <label className="flex items-center gap-2">
-            <input
-              type="radio"
-              value="student"
-              className="text-primary-600 focus:ring-primary-500"
-              {...register('role')}
-            />
-            <span className="text-sm text-secondary-700">Estudiante</span>
-          </label>
-          <label className="flex items-center gap-2">
-            <input
-              type="radio"
-              value="teacher"
-              className="text-primary-600 focus:ring-primary-500"
-              {...register('role')}
-            />
-            <span className="text-sm text-secondary-700">Profesor</span>
-          </label>
-        </div>
-        {errors.role && (
-          <p className="mt-1 text-sm text-danger-600">{errors.role.message}</p>
-        )}
-      </div>
+      <p className="text-xs text-secondary-500">
+        Las nuevas cuentas se registran como <strong>Estudiante</strong>. Un administrador puede cambiar tu rol si es necesario.
+      </p>
 
       <Button type="submit" className="w-full" loading={isLoading}>
         Crear Cuenta

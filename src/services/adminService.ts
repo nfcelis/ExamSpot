@@ -1,6 +1,7 @@
 import { supabase } from '../lib/supabase'
 import type { QuestionBankItem } from '../types/question'
 import type { PracticeConfig } from '../types/exam'
+import type { Profile, UserRole } from '../types/user'
 
 // ===== Gestión de Preguntas Pendientes =====
 
@@ -453,4 +454,28 @@ export async function deleteAllMyQuestions(): Promise<number> {
 
   if (error) throw error
   return data?.length ?? 0
+}
+
+// ===== Gestión de Usuarios (solo Super Admin) =====
+
+export async function getAllUsers(): Promise<Profile[]> {
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('*')
+    .order('created_at', { ascending: false })
+
+  if (error) throw error
+  return data as Profile[]
+}
+
+export async function updateUserRole(userId: string, newRole: UserRole): Promise<Profile> {
+  const { data, error } = await supabase
+    .from('profiles')
+    .update({ role: newRole })
+    .eq('id', userId)
+    .select()
+    .single()
+
+  if (error) throw error
+  return data as Profile
 }

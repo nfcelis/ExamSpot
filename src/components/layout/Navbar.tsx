@@ -9,6 +9,7 @@ export function Navbar() {
   const isTeacher = profile?.role === 'teacher'
   const isStudent = profile?.role === 'student'
   const isAdmin = profile?.role === 'admin'
+  const isSuperAdmin = profile?.is_super_admin === true
 
   const handleSignOut = async () => {
     await signOut()
@@ -62,6 +63,14 @@ export function Navbar() {
                   >
                     Config
                   </Link>
+                  {isSuperAdmin && (
+                    <Link
+                      to="/admin/users"
+                      className="rounded-lg bg-amber-500 px-3 py-1.5 text-sm font-medium text-white hover:bg-amber-600"
+                    >
+                      Usuarios
+                    </Link>
+                  )}
                 </>
               )}
               {isTeacher && (
@@ -116,7 +125,7 @@ export function Navbar() {
                   {profile?.full_name || profile?.email}
                 </p>
                 <p className="text-xs capitalize text-secondary-500">
-                  {profile?.role === 'admin' ? 'Administrador' : profile?.role === 'teacher' ? 'Profesor' : 'Estudiante'}
+                  {isSuperAdmin ? 'Super Admin' : profile?.role === 'admin' ? 'Administrador' : profile?.role === 'teacher' ? 'Profesor' : 'Estudiante'}
                 </p>
               </div>
               <Button variant="ghost" size="sm" onClick={handleSignOut}>

@@ -6,6 +6,7 @@ export interface Profile {
   role: UserRole
   full_name: string | null
   created_at: string
+  is_super_admin?: boolean
 }
 
 export interface AuthState {

@@ -1,6 +1,5 @@
 import { supabase } from '../lib/supabase'
 import { useAuthStore } from '../store/authStore'
-import type { UserRole } from '../types/user'
 import toast from 'react-hot-toast'
 
 export function useAuth() {
@@ -9,7 +8,6 @@ export function useAuth() {
   const signUp = async (
     email: string,
     password: string,
-    role: UserRole,
     fullName: string
   ) => {
     const { error } = await supabase.auth.signUp({
@@ -17,8 +15,8 @@ export function useAuth() {
       password,
       options: {
         data: {
-          role,
           full_name: fullName,
+          // role is intentionally omitted — the DB trigger always creates accounts as 'student'
         },
       },
     })

@@ -16,12 +16,22 @@ export interface CreateQuestionData {
 
 export interface UpdateQuestionData extends Partial<Omit<CreateQuestionData, 'exam_id'>> {}
 
+// Para teachers/admin viendo su propio examen (incluye correct_answer)
 export async function getQuestionsByExamId(examId: string): Promise<Question[]> {
   const { data, error } = await supabase
     .from('questions')
     .select('*')
     .eq('exam_id', examId)
     .order('order_index', { ascending: true })
+
+  if (error) throw error
+  return data as Question[]
+}
+
+// Para estudiantes tomando examen de PRÁCTICA (sin correct_answer)
+export async function getPracticeQuestionsForStudent(examId: string): Promise<Question[]> {
+  const { data, error } = await supabase
+    .rpc('get_practice_questions_safe', { p_exam_id: examId })
 
   if (error) throw error
   return data as Question[]

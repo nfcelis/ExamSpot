@@ -23,6 +23,7 @@ import { QuestionBankManager } from './pages/admin/QuestionBankManager'
 import { QuestionGenerator } from './pages/admin/QuestionGenerator'
 import { PendingQuestionsReview } from './pages/admin/PendingQuestionsReview'
 import { PracticeConfigPage } from './pages/admin/PracticeConfig'
+import { UserManagementPage } from './pages/admin/UserManagement'
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -155,6 +156,14 @@ function AppRoutes() {
         element={
           <ProtectedRoute requireRole="admin">
             <PracticeConfigPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/users"
+        element={
+          <ProtectedRoute requireRole="admin" requireSuperAdmin>
+            <UserManagementPage />
           </ProtectedRoute>
         }
       />
